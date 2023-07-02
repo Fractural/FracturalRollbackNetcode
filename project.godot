@@ -12,6 +12,15 @@ config_version=4
 
 config/name="FracturalRollbackNetcode"
 
+[editor_plugins]
+
+enabled=PoolStringArray( "res://addons/gd2cs.py/plugin.cfg" )
+
+[gd2cs]
+
+config/ask_no_python=true
+config/python="py"
+
 [gui]
 
 common/drop_mouse_on_gui_input_disabled=true
