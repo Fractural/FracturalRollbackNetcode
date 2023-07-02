@@ -16,36 +16,36 @@
 //            MovementVector,
 //        }
 
-//        public Dictionary _SaveState()
+//        public GDC.Dictionary _SaveState()
 //        {
-//            return new Dictionary()
+//            return new GDC.Dictionary()
 //            {
 //                [nameof(Position)] = Position
 //            };
 //        }
 
-//        public void _LoadState(Dictionary state)
+//        public void _LoadState(GDC.Dictionary state)
 //        {
 //            Position = state.Get<Vector2>(nameof(Position));
 //        }
 
-//        public void _InterpolateState(Dictionary oldState, Dictionary newState, float weight)
+//        public void _InterpolateState(GDC.Dictionary oldState, GDC.Dictionary newState, float weight)
 //        {
 //            Position = oldState.Get<Vector2>(nameof(Position)).Lerp(
 //                newState.Get<Vector2>(nameof(Position)),
 //                weight);
 //        }
 
-//        public Dictionary _GetLocalInput()
+//        public GDC.Dictionary _GetLocalInput()
 //        {
 //            var inputVector = Input.GetVector(InputPrefix + "left", InputPrefix + "right", InputPrefix + "up", InputPrefix + "down");
-//            var input = new Dictionary();
+//            var input = new GDC.Dictionary();
 //            if (inputVector != Vector2.Zero)
 //                input[PlayerInputKey.MovementVector] = inputVector;
 //            return input;
 //        }
 
-//        public Dictionary _PredictRemoteInput(Dictionary previousInput, int ticksSinceRealInput)
+//        public GDC.Dictionary _PredictRemoteInput(GDC.Dictionary previousInput, int ticksSinceRealInput)
 //        {
 //            var input = previousInput.Duplicate();
 //            if (ticksSinceRealInput > 5)
@@ -53,7 +53,7 @@
 //            return input;
 //        }
 
-//        public void _NetworkProcess(Dictionary input)
+//        public void _NetworkProcess(GDC.Dictionary input)
 //        {
 //            var inputVector = input.Get(PlayerInputKey.MovementVector, Vector2.Zero);
 //            Position += inputVector * 8;

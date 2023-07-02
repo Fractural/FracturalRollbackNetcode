@@ -1,8 +1,7 @@
 
 using System;
 using Godot;
-using Dictionary = Godot.Collections.Dictionary;
-using Array = Godot.Collections.Array;
+using GDC = Godot.Collections;
 using System.Linq;
 using Fractural.Utils;
 
@@ -10,7 +9,6 @@ namespace Fractural.RollbackNetcode
 {
     public class SyncReplay : Node
     {
-
         public const string GAME_PORT_SETTING = "network/rollback/log_inspector/replay_port";
         public const string MATCH_SCENE_PATH_SETTING = "network/rollback/log_inspector/replay_match_scene_path";
         public const string MATCH_SCENE_METHOD_SETTING = "network/rollback/log_inspector/replay_match_scene_method";
@@ -22,7 +20,7 @@ namespace Fractural.RollbackNetcode
 
         public bool _setting_up_match = false;
 
-        public void _Ready()
+        public override void _Ready()
         {
             if (OS.GetCmdlineArgs().Contains("replay"))
             {
@@ -48,10 +46,9 @@ namespace Fractural.RollbackNetcode
             }
         }
 
-        public void _ShowErrorAndQuit(String msg)
+        public override void _Process(float delta)
         {
-            OS.Alert(msg);
-            GetTree().Quit(1);
+            Poll();
         }
 
         public bool ConnectToReplayServer()
@@ -71,16 +68,13 @@ namespace Fractural.RollbackNetcode
                 port = ProjectSettingsUtils.GetSetting<int>(GAME_PORT_SETTING);
 
             }
-            connection = new StreamPeerTCP()
-
-            return connection.ConnectToHost("127.0.0.1", port) == OK;
-
+            connection = new StreamPeerTCP();
+            return connection.ConnectToHost("127.0.0.1", port) == Error.Ok;
         }
 
         public bool IsConnectedToReplayServer()
         {
-            return connection && connection.IsConnectedToHost();
-
+            return connection != null && connection.IsConnectedToHost();
         }
 
         public void Poll()
@@ -89,161 +83,140 @@ namespace Fractural.RollbackNetcode
             {
                 return;
             }
-            if (connection)
+            if (connection != null)
             {
                 var status = connection.GetStatus();
-                if (status == StreamPeerTCP.STATUS_CONNECTED)
+                if (status == StreamPeerTCP.Status.Connected)
                 {
                     while (!_setting_up_match && connection.GetAvailableBytes() >= 4)
                     {
-                        var data = connection.get_var()
-
-                        if (data is Dictionary)
+                        var data = connection.GetVar();
+                        if (data is GDC.Dictionary dict)
                         {
-                            ProcessMessage(data);
+                            ProcessMessage(dict);
                         }
                     }
                 }
-                else if (status == StreamPeerTCP.STATUS_NONE)
+                else if (status == StreamPeerTCP.Status.None)
                 {
                     GetTree().Quit();
                 }
-                else if (status == StreamPeerTCP.STATUS_ERROR)
+                else if (status == StreamPeerTCP.Status.Error)
                 {
                     OS.Alert("Error in connection to replay server");
                     GetTree().Quit(1);
-
                 }
             }
         }
 
-        public void _Process(float delta)
+        public void ProcessMessage(GDC.Dictionary msg)
         {
-            Poll();
-
-        }
-
-        public void ProcessMessage(Dictionary msg)
-        {
-            if (!msg.Has("type"))
+            if (!msg.Contains("type"))
             {
-                GD.PushError("SyncReplay message has no "type" property: %s" % msg);
+                GD.PushError($"SyncReplay message has no \"type\" property: {msg}");
                 return;
 
             }
-            var type = msg["type"];
+            var type = msg.Get<string>("type");
             switch (type)
             {
+                case "setup_match":
+                    var myPeerId = msg.Get("my_peer_id", 1);
+                    var peerIds = msg.Get("peer_ids", new GDC.Array() { });
+                    var matchInfo = msg.Get("match_info", new GDC.Dictionary() { });
+                    _DoSetupMatch1(myPeerId, peerIds, matchInfo);
+                    break;
+                case "load_state":
+                    var state = msg.Get("state", new GDC.Dictionary() { });
+                    _DoLoadState(state);
+                    break;
+                case "execute_frame":
+                    _DoExecuteFrame(msg);
+                    break;
+                default:
+                    GD.PushError($"SyncReplay message has unknown type: {type}");
+                    break;
+            }
+        }
 
+        private void _ShowErrorAndQuit(String msg)
+        {
+            OS.Alert(msg);
+            GetTree().Quit(1);
+        }
+
+        private void _DoSetupMatch1(int my_peer_id, GDC.Array peer_ids, GDC.Dictionary match_info)
+        {
+            SyncManager.Stop();
+            SyncManager.ClearPeers();
+
+            SyncManager.network_adaptor = new DummyNetworkAdaptor(my_peer_id);
+
+            SyncManager.mechanized = true;
+
+            foreach (var peer_id in peer_ids)
             {
-                "setup_match",
-				var my_peer_id = msg.Get("my_peer_id"}, 1);
-            var peer_ids = msg.Get("peer_ids", new Array() { });
-            var match_info = msg.Get("match_info", new Dictionary() { });
-            _DoSetupMatch1(my_peer_id, peer_ids, match_info)
+                SyncManager.AddPeer(peer_id);
 
-
-
+            }
+            if (GetTree().ChangeScene(match_scene_path) != OK)
             {
-                "load_state",
-				var state = msg.Get("state"}, new Dictionary() { });
-            _DoLoadState(state)
+                _ShowErrorAndQuit($"Unable to change scene to: {match_scene_path}");
+                return;
+            }
+            _setting_up_match = true;
+            CallDeferred("_do_setup_match2", my_peer_id, peer_ids, match_info);
 
+        }
 
+        private void _DoSetupMatch2(int my_peer_id, GDC.Array peer_ids, GDC.Dictionary match_info)
+        {
+            _setting_up_match = false;
 
+            var match_scene = GetTree().CurrentScene;
+            if (!Utils.HasInteropMethod(match_scene, match_scene_method))
             {
-                "execute_frame",
-				_DoExecuteFrame(msg)
-				
-			case _:
-                GD.PushError("SyncReplay message has unknown type: %s" % type);
+                _ShowErrorAndQuit($"Match scene has no such method: {match_scene_method}");
+                return;
 
-                break;
+                // Call the scene's setup method.
+            }
+            Utils.CallInteropMethod(match_scene, match_scene_method, new GDC.Array() { my_peer_id, peer_ids, match_info });
+
+            SyncManager.Start();
+        }
+
+        private void _DoLoadState(GDC.Dictionary state)
+        {
+            state = SyncManager.hash_serializer.Unserialize(state);
+            SyncManager._CallLoadState(state);
+        }
+
+        private void _DoExecuteFrame(GDC.Dictionary msg)
+        {
+            Logger.FrameType frame_type = (Logger.FrameType)msg.Get<int>("frame_type");
+            GDC.Dictionary input_frames_received = msg.Get("input_frames_received", new GDC.Dictionary() { });
+            int rollback_ticks = msg.Get("rollback_ticks", 0);
+
+            input_frames_received = SyncManager.hash_serializer.Unserialize(input_frames_received);
+            SyncManager.mechanized_input_received = input_frames_received;
+            SyncManager.mechanized_rollback_ticks = rollback_ticks;
+
+            switch (frame_type)
+            {
+                case Logger.FrameType.TICK:
+                    SyncManager.ExecuteMechanizedTick();
+                    break;
+                case Logger.FrameType.INTERPOLATION_FRAME:
+                    SyncManager.ExecuteMechanizedInterpolationFrame(msg["delta"]);
+                    break;
+                case Logger.FrameType.INTERFRAME:
+                    SyncManager.ExecuteMechanizedInterframe();
+                    break;
+                default:
+                    SyncManager.ResetMechanizedData();
+                    break;
             }
         }
     }
-
-    public void _DoSetupMatch1(int my_peer_id, Array peer_ids, Dictionary match_info)
-    {
-        SyncManager.Stop();
-        SyncManager.ClearPeers();
-
-        SyncManager.network_adaptor = DummyNetworkAdaptor.new(my_peer_id)
-
-        SyncManager.mechanized = true;
-
-        foreach (var peer_id in peer_ids)
-        {
-            SyncManager.AddPeer(peer_id);
-
-        }
-        if (GetTree().ChangeScene(match_scene_path) != OK)
-        {
-            _ShowErrorAndQuit("Unable to change scene to: %s" % match_scene_path);
-            return;
-
-        }
-        _setting_up_match = true;
-        CallDeferred("_do_setup_match2", my_peer_id, peer_ids, match_info);
-
-    }
-
-    public void _DoSetupMatch2(int my_peer_id, Array peer_ids, Dictionary match_info)
-    {
-        _setting_up_match = false;
-
-        var match_scene = GetTree().current_scene;
-        if (!Utils.HasInteropMethod(match_scene, match_scene_method))
-        {
-            _ShowErrorAndQuit("Match scene has no such method: %s" % match_scene_method);
-            return;
-
-            // Call the scene's setup method.
-        }
-        Utils.CallInteropMethod(match_scene, match_scene_method, new Array() { my_peer_id, peer_ids, match_info });
-
-        SyncManager.Start();
-
-    }
-
-    public void _DoLoadState(Dictionary state)
-    {
-        state = SyncManager.hash_serializer.Unserialize(state);
-        SyncManager._CallLoadState(state);
-
-    }
-
-    public void _DoExecuteFrame(Dictionary msg)
-    {
-        int frame_type = msg["frame_type"];
-        Dictionary input_frames_received = msg.Get("input_frames_received", new Dictionary() { });
-        int rollback_ticks = msg.Get("rollback_ticks", 0);
-
-        input_frames_received = SyncManager.hash_serializer.Unserialize(input_frames_received);
-        SyncManager.mechanized_input_received = input_frames_received;
-        SyncManager.mechanized_rollback_ticks = rollback_ticks;
-
-        switch (frame_type)
-        {
-            case Logger.FrameType.TICK:
-                SyncManager.ExecuteMechanizedTick();
-
-                break;
-            case Logger.FrameType.INTERPOLATION_FRAME:
-                SyncManager.ExecuteMechanizedInterpolationFrame(msg["delta"]);
-
-                break;
-            case Logger.FrameType.INTERFRAME:
-                SyncManager.ExecuteMechanizedInterframe();
-
-                break;
-            case _:
-                SyncManager.ResetMechanizedData();
-
-
-
-                break;
-        }
-    }
-}
 }

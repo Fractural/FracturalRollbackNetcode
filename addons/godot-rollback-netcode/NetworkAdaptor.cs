@@ -1,96 +1,40 @@
 
 using System;
 using Godot;
-using Dictionary = Godot.Collections.Dictionary;
-using Array = Godot.Collections.Array;
+using GDC = Godot.Collections;
 
-
-public class NetworkAdaptor : Node
+namespace Fractural.RollbackNetcode
 {
-	 
-	[Signal] delegate void ReceivedPing (peer_id, msg);
-	[Signal] delegate void ReceivedPingBack (peer_id, msg);
-	[Signal] delegate void ReceivedRemoteStart ();
-	[Signal] delegate void ReceivedRemoteStop ();
-	[Signal] delegate void ReceivedInputTick (peer_id, msg);
-	
-	public void AttachNetworkAdaptor(__TYPE sync_manager)
-	{  
-	
-	}
-	
-	public void DetachNetworkAdaptor(__TYPE sync_manager)
-	{  
-	
-	}
-	
-	public void StartNetworkAdaptor(__TYPE sync_manager)
-	{  
-	
-	}
-	
-	public void StopNetworkAdaptor(__TYPE sync_manager)
-	{  
-	
-	}
-	
-	public void SendPing(int peer_id, Dictionary msg)
-	{  
-		GD.PushError("UNIMPLEMENTED NetworkAdaptor ERROR.SendPing()");
-	
-	}
-	
-	public void SendPingBack(int peer_id, Dictionary msg)
-	{  
-		GD.PushError("UNIMPLEMENTED NetworkAdaptor ERROR.SendPingBack()");
-	
-	}
-	
-	public void SendRemoteStart(int peer_id)
-	{  
-		GD.PushError("UNIMPLEMENTED NetworkAdaptor ERROR.SendRemoteStart()");
-	
-	}
-	
-	public void SendRemoteStop(int peer_id)
-	{  
-		GD.PushError("UNIMPLEMENTED NetworkAdaptor ERROR.SendRemoteStop()");
-	
-	}
-	
-	public void SendInputTick(int peer_id, PoolByteArray msg)
-	{  
-		GD.PushError("UNIMPLEMENTED NetworkAdaptor ERROR.SendInputTick()");
-	
-	}
-	
-	public bool IsNetworkHost()
-	{  
-		GD.PushError("UNIMPLEMENTED NetworkAdaptor ERROR.IsNetworkHost()");
-		return true;
-	
-	}
-	
-	public bool IsNetworkMasterForNode(Node node)
-	{  
-		GD.PushError("UNIMPLEMENTED NetworkAdaptor ERROR.IsNetworkMasterForNode()");
-		return true;
-	
-	}
-	
-	public int GetNetworkUniqueId()
-	{  
-		GD.PushError("UNIMPLEMENTED NetworkAdaptor ERROR.GetNetworkUniqueId()");
-		return 1;
-	
-	}
-	
-	public void Poll()
-	{  
-	
-	
-	}
-	
-	
-	
+    public abstract class NetworkAdaptor : Node
+    {
+        public class PingMessage
+        {
+            public int LocalTime { get; set; }
+            public int RemoteTime { get; set; }
+        }
+
+        public delegate void ReceivedPingDelegate(int peer_id, PingMessage msg);
+        public event ReceivedPingDelegate ReceivedPing;
+        public delegate void ReceivedPingBackDelegate(int peer_id, PingMessage msg);
+        public event ReceivedPingBackDelegate ReceivedPingBack;
+        public event Action ReceivedRemoteStart;
+        public event Action ReceivedRemoteStop;
+        public delegate void ReceivedInputTickDelegate(int peer_id, byte[] msg);
+        public event ReceivedInputTickDelegate ReceivedInputTick;
+
+        public virtual void AttachNetworkAdaptor(SyncManager sync_manager) { }
+        public virtual void DetachNetworkAdaptor(SyncManager sync_manager) { }
+        public virtual void StartNetworkAdaptor(SyncManager sync_manager) { }
+        public virtual void StopNetworkAdaptor(SyncManager sync_manager) { }
+
+        public abstract void SendPing(int peer_id, PingMessage msg);
+        public abstract void SendPingBack(int peer_id, PingMessage msg);
+        public abstract void SendRemoteStart(int peer_id);
+        public abstract void SendRemoteStop(int peer_id);
+        public abstract void SendInputTick(int peer_id, byte[] msg);
+        public abstract bool IsNetworkHost();
+        public abstract bool IsNetworkMasterForNode(Node node);
+        public abstract int GetNetworkUniqueId();
+        public abstract void Poll();
+    }
 }

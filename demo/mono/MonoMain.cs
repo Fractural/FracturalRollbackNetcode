@@ -171,7 +171,7 @@
 //            SyncManager.Global.ClearPeers();
 //        }
 
-//        public void SetupMatchForReplay(int myPeerId, Godot.Collections.Array peerIds, Godot.Collections.Dictionary matchInfo)
+//        public void SetupMatchForReplay(int myPeerId, Godot.Collections.GDC.Array peerIds, Godot.Collections.GDC.Dictionary matchInfo)
 //        {
 //            connectionPanel.Visible = false;
 //            mainMenu.Visible = false;

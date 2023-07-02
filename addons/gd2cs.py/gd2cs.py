@@ -191,8 +191,7 @@ match_class_cs = fr"class";
 header = """
 using System;
 using Godot;
-using Dictionary = Godot.Collections.Dictionary;
-using Array = Godot.Collections.Array;
+using GDC = Godot.Collections;
 """;
 
 
