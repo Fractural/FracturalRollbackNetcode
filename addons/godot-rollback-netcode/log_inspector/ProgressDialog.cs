@@ -10,7 +10,7 @@ public class ProgressDialog : PopupDialog
     public onready var label = GetNode("MarginContainer/VBoxContainer/Label");
     public onready var progress_bar = GetNode("MarginContainer/VBoxContainer/ProgressBar");
 
-    public void SetLabel(String text)
+    public void SetLabel(string text)
     {
         label.text = text;
 

@@ -56,7 +56,7 @@ public class SpawnManager : Node
 
     }
 
-    public String _RenameNode(String name)
+    public string _RenameNode(string name)
     {
         if (!counter.Contains(name))
         {
@@ -67,7 +67,7 @@ public class SpawnManager : Node
 
     }
 
-    public void _RemoveCollidingNode(String name, Node parent)
+    public void _RemoveCollidingNode(string name, Node parent)
     {
         var existing_node = parent.GetNodeOrNull(name);
         if (existing_node)
@@ -97,7 +97,7 @@ public class SpawnManager : Node
         }
     }
 
-    public Node _InstanceScene(String resource_path)
+    public Node _InstanceScene(string resource_path)
     {
         if (retired_nodes.Contains(resource_path))
         {
@@ -136,7 +136,7 @@ public class SpawnManager : Node
 
     }
 
-    public Node Spawn(String name, Node parent, PackedScene scene, GDC.Dictionary data, bool rename = true, String signal_name = "")
+    public Node Spawn(string name, Node parent, PackedScene scene, GDC.Dictionary data, bool rename = true, string signal_name = "")
     {
         var spawned_node = _InstanceScene(scene.resource_path);
         if (signal_name == "")
@@ -192,9 +192,9 @@ public class SpawnManager : Node
 
     }
 
-    public void _DoDespawn(Node node, String node_path)
+    public void _DoDespawn(Node node, string node_path)
     {
-        String signal_name = node.GetMeta("spawn_signal_name");
+        string signal_name = node.GetMeta("spawn_signal_name");
         EmitSignal("scene_despawned", signal_name, node);
 
         if (Utils.HasInteropMethod(node, "_network_despawn"))

@@ -17,16 +17,16 @@ public class PerfTimer : Reference
 
     }
 
-    public void Start(String name)
+    public void Start(string name)
     {
-        start_timings[name] = OS.GetTicksUsec();
+        start_timings[name] = (uint)Time.GetTicksUsec();
 
     }
 
-    public void Stop(String name)
+    public void Stop(string name)
     {
         System.Diagnostics.Debug.Assert(start_timings.Contains(name), "stop() without Start() for %s" % name);
-        timings[name] = OS.GetTicksUsec() - start_timings[name];
+        timings[name] = (uint)Time.GetTicksUsec() - start_timings[name];
         start_timings.Erase(name);
 
     }

@@ -20,12 +20,12 @@ public class DebugStateComparer : Reference
     public class Mismatch :
         int type
 
-        String path
+        string path
 
         public __TYPE local_state;
     public __TYPE remote_state;
 
-    public void _Init(int _type, String _path, __TYPE _local_state, __TYPE _remote_state)
+    public void _Init(int _type, string _path, __TYPE _local_state, __TYPE _remote_state)
     {
         type = _type;
         path = _path;
@@ -62,7 +62,7 @@ public class DebugStateComparer : Reference
             foreach (var key in state[node_path].Keys())
             {
                 var value = state[node_path];
-                if (key is String)
+                if (key is string)
                 {
                     if (key.BeginsWith("_"))
                     {
@@ -174,7 +174,7 @@ public class DebugStateComparer : Reference
         }
     }
 
-    public String _GetDiffPathString(GDC.Array path, __TYPE key)
+    public string _GetDiffPathString(GDC.Array path, __TYPE key)
     {
         if (path.Size() > 0)
         {
@@ -215,7 +215,7 @@ public class DebugStateComparer : Reference
 
     }
 
-    public String PrintMismatches()
+    public string PrintMismatches()
     {
         var data = PoolStringArray();
 

@@ -1,214 +1,180 @@
 
 using System;
+using Fractural.Utils;
 using Godot;
 using GDC = Godot.Collections;
 
-
-public class HashSerializer : Reference
+namespace Fractural.RollbackNetcode
 {
-    public GDC.Dictionary Serialize(object value)
+    public class HashSerializer : Reference
     {
-        if (value is GDC.Dictionary dict)
+        public object Serialize(object value)
         {
-            return SerializeDictionary(dict);
-        }
-        else if (value is GDC.Array array)
-        {
-            return SerializeArray(array);
-        }
-        else if (value is Resource resource)
-        {
-            return SerializeResource(resource);
-        }
-        else if (value)
-        {
+            if (value is GDC.Dictionary dict)
+                return SerializeDictionary(dict);
+            else if (value is GDC.Array array)
+                return SerializeArray(array);
+            else if (value is Resource resource)
+                return SerializeResource(resource);
+            else if (value.GetType().IsValueType)
+                return SerializeValueType(value);
             return SerializeObject(value);
         }
-        return SerializeOther(value);
-    }
 
-    public GDC.Dictionary SerializeDictionary(GDC.Dictionary value)
-    {
-        GDC.Dictionary serialized = new GDC.Dictionary() { };
-        foreach (var key in value)
+        public GDC.Dictionary SerializeDictionary(GDC.Dictionary value)
         {
-            serialized[key] = Serialize(value[key]);
+            GDC.Dictionary serialized = new GDC.Dictionary() { };
+            foreach (var key in value)
+                serialized[key] = Serialize(value[key]);
+            return serialized;
         }
-        return serialized;
 
-    }
-
-    public GDC.Dictionary SerializeArray(GDC.Array value)
-    {
-        GDC.Array serialized = new GDC.Array() { };
-        foreach (var item in value)
+        public GDC.Array SerializeArray(GDC.Array value)
         {
-            serialized.Append(Serialize(item));
+            GDC.Array serialized = new GDC.Array() { };
+            foreach (var item in value)
+                serialized.Add(Serialize(item));
+            return serialized;
         }
-        return serialized;
-    }
 
-    public GDC.Dictionary SerializeResource(Resource value)
-    {
-        return new GDC.Dictionary()
-        {
-            ["_"] = "resource",
-            ["path"] = value.ResourcePath,
-        };
-
-    }
-
-    public GDC.Dictionary SerializeObject(object value)
-    {
-        return new GDC.Dictionary()
-        {
-            ["_"] = "object",
-            ["string"] = value.ToString(),
-        };
-    }
-
-    public GDC.Dictionary SerializeOther(object value)
-    {
-        if (value is Vector2)
+        public GDC.Dictionary SerializeResource(Resource value)
         {
             return new GDC.Dictionary()
             {
-                _ = "Vector2",
-                x = value.x,
-                y = value.y,
+                ["_"] = "resource",
+                ["path"] = value.ResourcePath,
             };
         }
-        else if (value is Vector3)
+
+        public GDC.Dictionary SerializeObject(object value)
         {
             return new GDC.Dictionary()
             {
-                _ = "Vector3",
-                x = value.x,
-                y = value.y,
-                z = value.z,
+                ["_"] = "object",
+                ["string"] = value.ToString(),
             };
         }
-        else if (value is Transform2D)
-        {
-            return new GDC.Dictionary()
-            {
-                _ = "Transform2D",
-                x = new GDC.Dictionary() { x = value.x.x, y = value.x.y },
-                y = new GDC.Dictionary() { x = value.y.x, y = value.y.y },
-                origin = new GDC.Dictionary() { x = value.origin.x, y = value.origin.y },
-            };
-        }
-        else if (value is Transform)
-        {
-            return new GDC.Dictionary()
-            {
-                _ = "Transform",
-                x = new GDC.Dictionary() { x = value.basis.x.x, y = value.basis.x.y, z = value.basis.x.z },
-                y = new GDC.Dictionary() { x = value.basis.y.x, y = value.basis.y.y, z = value.basis.y.z },
-                z = new GDC.Dictionary() { x = value.basis.z.x, y = value.basis.z.y, z = value.basis.z.z },
-                origin = new GDC.Dictionary() { x = value.origin.x, y = value.origin.y, z = value.origin.z },
-            };
 
-        }
-        return value;
-    }
-
-    public __TYPE Unserialize(__TYPE value)
-    {
-        if (value is GDC.Dictionary)
+        public object SerializeValueType(object value)
         {
-            if (!value.Contains("_"))
+            if (value is Vector2 vector2)
             {
-                return UnserializeDictionary(value);
-
+                return new GDC.Dictionary()
+                {
+                    ["_"] = "Vector2",
+                    ["x"] = vector2.x,
+                    ["y"] = vector2.y,
+                };
             }
-            if (value["_"] == "resource")
+            else if (value is Vector3 vector3)
             {
-                return UnserializeResource(value);
+                return new GDC.Dictionary()
+                {
+                    ["_"] = "Vector3",
+                    ["x"] = vector3.x,
+                    ["y"] = vector3.y,
+                    ["z"] = vector3.z,
+                };
             }
-            else if (value["_"] in ["Vector2", "Vector3", "Transform2D", "Transform"])
-			{
-                return UnserializeOther(value);
-
-            }
-            return UnserializeObject(value);
-        }
-        else if (value is GDC.Array)
-        {
-            return UnserializeArray(value);
-        }
-        return value;
-
-    }
-
-    public __TYPE UnserializeDictionary(GDC.Dictionary value)
-    {
-        GDC.Dictionary unserialized = new GDC.Dictionary() { };
-        foreach (var key in value)
-        {
-            unserialized[key] = Unserialize(value[key]);
-        }
-        return unserialized;
-
-    }
-
-    public __TYPE UnserializeArray(GDC.Array value)
-    {
-        GDC.Array unserialized = new GDC.Array() { };
-        foreach (var item in value)
-        {
-            unserialized.Append(Unserialize(item));
-        }
-        return unserialized;
-
-    }
-
-    public __TYPE UnserializeResource(GDC.Dictionary value)
-    {
-        return GD.Load(value["path"]);
-
-    }
-
-    public __TYPE UnserializeObject(GDC.Dictionary value)
-    {
-        if (value["_"] == "object")
-        {
-            return value["string"];
-        }
-        return null;
-
-    }
-
-    public __TYPE UnserializeOther(GDC.Dictionary value)
-    {
-        switch (value["_"])
-        {
-
+            else if (value is Transform2D transform2D)
             {
-            "Vector2",
-				return new Vector2(value.x}, value.y);
-        {
-            "Vector3",
-				return new Vector3(value.x}, value.y, value.z);
-        {
-            "Transform2D",
-				return new Transform2D(
-                    new Vector2(value.x.x}, value.x.y),
-					new Vector2(value.y.x, value.y.y),
-					new Vector2(value.origin.x, value.origin.y)
-				);
-        {
-            "Transform",
-				return new Transform(
-                    new Vector3(value.x.x}, value.x.y, value.x.z),
-					new Vector3(value.y.x, value.y.y, value.y.z),
-					new Vector3(value.z.x, value.z.y, value.z.z),
-					new Vector3(value.origin.x, value.origin.y, value.origin.z)
-				);
+                return new GDC.Dictionary()
+                {
+                    ["_"] = "Transform2D",
+                    ["x"] = new GDC.Dictionary() { ["x"] = transform2D.x.x, ["y"] = transform2D.x.y },
+                    ["y"] = new GDC.Dictionary() { ["x"] = transform2D.y.x, ["y"] = transform2D.y.y },
+                    ["origin"] = new GDC.Dictionary() { ["x"] = transform2D.origin.x, ["y"] = transform2D.origin.y },
+                };
+            }
+            else if (value is Transform transform)
+            {
+                return new GDC.Dictionary()
+                {
+                    ["_"] = "Transform",
+                    ["x"] = new GDC.Dictionary() { ["x"] = transform.basis.x.x, ["y"] = transform.basis.x.y, ["z"] = transform.basis.x.z },
+                    ["y"] = new GDC.Dictionary() { ["x"] = transform.basis.y.x, ["y"] = transform.basis.y.y, ["z"] = transform.basis.y.z },
+                    ["z"] = new GDC.Dictionary() { ["x"] = transform.basis.z.x, ["y"] = transform.basis.z.y, ["z"] = transform.basis.z.z },
+                    ["origin"] = new GDC.Dictionary() { ["x"] = transform.origin.x, ["y"] = transform.origin.y, ["z"] = transform.origin.z },
+                };
+            }
+            return value;
+        }
 
+        public object Unserialize(object value)
+        {
+            if (value is GDC.Dictionary dict)
+            {
+                var otherTypes = new[] { "Vector2", "Vector3", "Transform2D", "Transform" };
+                if (!dict.Contains("_"))
+                    return UnserializeDictionary(dict);
+
+                if (dict.Get<string>("_") == "resource")
+                    return UnserializeResource(dict);
+                else if (otherTypes.Contains(dict.Get<string>("_")))
+                    return UnserializeOther(dict);
+
+                return UnserializeObject(dict);
+            }
+            else if (value is GDC.Array array)
+                return UnserializeArray(array);
+            return value;
+
+        }
+
+        public GDC.Dictionary UnserializeDictionary(GDC.Dictionary value)
+        {
+            GDC.Dictionary unserialized = new GDC.Dictionary() { };
+            foreach (var key in value)
+                unserialized[key] = Unserialize(value[key]);
+            return unserialized;
+        }
+
+        public GDC.Array UnserializeArray(GDC.Array value)
+        {
+            GDC.Array unserialized = new GDC.Array() { };
+            foreach (var item in value)
+                unserialized.Add(Unserialize(item));
+            return unserialized;
+        }
+
+        public Resource UnserializeResource(GDC.Dictionary value)
+        {
+            return GD.Load(value.Get<string>("path"));
+        }
+
+        public string UnserializeObject(GDC.Dictionary value)
+        {
+            if (value.Get<string>("_") == "object")
+            {
+                return value.Get<string>("string");
+            }
+            return null;
+
+        }
+
+        public object UnserializeOther(GDC.Dictionary value)
+        {
+            switch (value.Get<string>("_"))
+            {
+                case "Vector2":
+                    return new Vector2(value.Get<float>("x"), value.Get<float>("y"));
+                case "Vector3":
+                    return new Vector3(value.Get<float>("x"), value.Get<float>("y"), value.Get<float>("z"));
+                case "Transform2D":
+                    return new Transform2D(
+                        new Vector2(value.Get<float>("x.x"), value.Get<float>("x.y")),
+                        new Vector2(value.Get<float>("y.x"), value.Get<float>("y.y")),
+                        new Vector2(value.Get<float>("origin.x"), value.Get<float>("origin.y"))
+                    );
+                case "Transform":
+                    return new Transform(
+                        new Vector3(value.Get<float>("x.x"), value.Get<float>("x.y"), value.Get<float>("x.z")),
+                        new Vector3(value.Get<float>("y.x"), value.Get<float>("y.y"), value.Get<float>("y.z")),
+                        new Vector3(value.Get<float>("z.x"), value.Get<float>("z.y"), value.Get<float>("z.z")),
+                        new Vector3(value.Get<float>("origin.x"), value.Get<float>("origin.y"), value.Get<float>("origin.z"))
+                    );
+            }
+            return null;
+        }
     }
-		return null;
-	
-	
-	}
 }

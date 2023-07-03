@@ -230,7 +230,7 @@ public void _GuiInput(InputEvent event)
                 }
                 if (frame.data.Contains("skip_reason"))
                 {
-                    String tick_letter = "";
+                    string tick_letter = "";
 
                         case Match(int)(frame.data["skip_reason"]):
 

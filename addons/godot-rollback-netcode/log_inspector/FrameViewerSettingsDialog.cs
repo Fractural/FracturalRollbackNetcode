@@ -148,7 +148,7 @@ public class FrameViewerSettingsDialog : WindowDialog
 
     }
 
-    public void _OnMaxRollbackTicksTextChanged(String new_text)
+    public void _OnMaxRollbackTicksTextChanged(string new_text)
     {
         var value = max_rollback_ticks_field.text;
         if (value.IsValidInteger())

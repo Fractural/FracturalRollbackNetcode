@@ -1,106 +1,92 @@
 
 using System;
+using Fractural.Utils;
 using Godot;
 using GDC = Godot.Collections;
 
-
-public class SoundManager : Node
+namespace Fractural.RollbackNetcode
 {
-
-    public const string DEFAULT_SOUND_BUS_SETTING := "network/rollback/sound_manager/default_sound_bus"
-
-
-    public string default_bus = "Master";
-    public GDC.Dictionary ticks = new GDC.Dictionary() { };
-
-    public __TYPE SyncManager;
-
-    public void _Ready()
+    public class SoundManager : Node
     {
-        if (ProjectSettings.HasSetting(DEFAULT_SOUND_BUS_SETTING))
+        public const string DEFAULT_SOUND_BUS_SETTING = "network/rollback/sound_manager/default_sound_bus";
+
+        public string default_bus = "Master";
+        // [tick: int]: data: GDC.Dictionary
+        public GDC.Dictionary ticks = new GDC.Dictionary() { };
+
+        private SyncManager _syncManager;
+
+        public override void _Ready()
         {
-            default_bus = ProjectSettings.GetSetting(DEFAULT_SOUND_BUS_SETTING);
+            if (ProjectSettings.HasSetting(DEFAULT_SOUND_BUS_SETTING))
+                default_bus = ProjectSettingsUtils.GetSetting<string>(DEFAULT_SOUND_BUS_SETTING);
+        }
+
+        public void SetupSoundManager(SyncManager _sync_manager)
+        {
+            _syncManager = _sync_manager;
+            _syncManager.Connect("tick_retired", this, "_on_SyncManager_tick_retired");
+            _syncManager.Connect("sync_stopped", this, "_on_SyncManager_sync_stopped");
 
         }
-    }
 
-    public void SetupSoundManager(__TYPE _sync_manager)
-    {
-        SyncManager = _sync_manager;
-        SyncManager.Connect("tick_retired", this, "_on_SyncManager_tick_retired");
-        SyncManager.Connect("sync_stopped", this, "_on_SyncManager_sync_stopped");
-
-    }
-
-    public void PlaySound(String identifier, AudioStream sound, GDC.Dictionary info = new GDC.Dictionary() { })
-    {
-        if (SyncManager.IsRespawning())
+        public void PlaySound(string identifier, AudioStream sound, GDC.Dictionary info = null)
         {
-            return;
-
-        }
-        if (ticks.Contains(SyncManager.current_tick))
-        {
-            if (ticks[SyncManager.current_tick].Contains(identifier))
-            {
+            if (info == null)
+                info = new GDC.Dictionary() { };
+            if (_syncManager.IsRespawning())
                 return;
+            if (ticks.Contains(_syncManager.current_tick))
+            {
+                if (ticks.Get<GDC.Dictionary>(_syncManager.current_tick).Contains(identifier))
+                    return;
             }
+            else
+                ticks[_syncManager.current_tick] = new GDC.Dictionary() { };
+            ticks.Get<GDC.Dictionary>(_syncManager.current_tick)[identifier] = true;
+
+            Node node;
+            if (info.Contains("position"))
+            {
+                var player2D = new AudioStreamPlayer2D();
+                player2D.Stream = sound;
+                player2D.VolumeDb = info.Get("volume_db", 0f);
+                player2D.PitchScale = info.Get("pitch_scale", 1f);
+                player2D.Bus = info.Get("bus", default_bus);
+                node = player2D;
+                AddChild(player2D);
+                player2D.Play();
+                player2D.GlobalPosition = info.Get<Vector2>("position");
+            }
+            else
+            {
+                var player = new AudioStreamPlayer();
+                player.Stream = sound;
+                player.VolumeDb = info.Get("volume_db", 0f);
+                player.PitchScale = info.Get("pitch_scale", 1f);
+                player.Bus = info.Get("bus", default_bus);
+                node = player;
+                AddChild(player);
+                player.Play();
+            }
+
+            node.Connect("finished", this, nameof(_OnAudioFinished), new GDC.Array() { node });
         }
-        else
+
+        public void _OnAudioFinished(Node node)
         {
-            ticks[SyncManager.current_tick] = new GDC.Dictionary() { };
+            RemoveChild(node);
+            node.QueueFree();
         }
-        ticks[SyncManager.current_tick][identifier] = true;
 
-        var node;
-        if (info.Contains("position"))
+        public void _OnSyncManagerTickRetired(int tick)
         {
-            node = new AudioStreamPlayer2D()
-
+            ticks.Remove(tick);
         }
-        else
+
+        public void _OnSyncManagerSyncStopped()
         {
-            node = new AudioStreamPlayer()
-
-
+            ticks.Clear();
         }
-        node.stream = sound;
-        node.volume_db = info.Get("volume_db", 0.0);
-        node.pitch_scale = info.Get("pitch_scale", 1.0);
-        node.bus = info.Get("bus", default_bus);
-
-        AddChild(node);
-        if (info.Contains("position"))
-        {
-            node.global_position = info["position"];
-
-        }
-        node.Play();
-
-        node.Connect("finished", this, "_on_audio_finished", new GDC.Array() { node });
-
     }
-
-    public void _OnAudioFinished(Node node)
-    {
-        RemoveChild(node);
-        node.QueueFree();
-
-    }
-
-    public void _OnSyncManagerTickRetired(__TYPE tick)
-    {
-        ticks.Erase(tick);
-
-    }
-
-    public void _OnSyncManagerSyncStopped()
-    {
-        ticks.Clear();
-
-
-    }
-
-
-
 }

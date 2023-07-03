@@ -1,121 +1,128 @@
 
 using System;
+using System.Linq;
+using Fractural.Utils;
 using Godot;
 using GDC = Godot.Collections;
 
-
-public class MessageSerializer : Reference
+namespace Fractural.RollbackNetcode
 {
-
-    public const int DEFAULT_MESSAGE_BUFFER_SIZE = 1280;
-
-    enum InputMessageKey
+    public interface IMessageSerializer
     {
-        NEXT_INPUT_TICK_REQUESTED,
-        INPUT,
-        NEXT_HASH_TICK_REQUESTED,
-        STATE_HASHES,
+        byte[] SerializeInput(GDC.Dictionary input);
+        GDC.Dictionary UnserializeInput(byte[] serialized);
+        byte[] SerializeMessage(GDC.Dictionary msg);
+        GDC.Dictionary UnserializeMessage(byte[] serialized);
     }
 
-    public PoolByteArray SerializeInput(GDC.Dictionary input)
+    public class MessageSerializer : Godot.Reference, IMessageSerializer
     {
-        return GD.Var2Bytes(input);
-
-    }
-
-    public GDC.Dictionary UnserializeInput(PoolByteArray serialized)
-    {
-        return GD.Bytes2Var(serialized);
-
-    }
-
-    public PoolByteArray SerializeMessage(GDC.Dictionary msg)
-    {
-        var buffer = new StreamPeerBuffer()
-
-        buffer.Resize(DEFAULT_MESSAGE_BUFFER_SIZE);
-
-        buffer.PutU32(msg[InputMessageKey.NEXT_INPUT_TICK_REQUESTED]);
-
-        var input_ticks = msg[InputMessageKey.INPUT];
-        buffer.PutU8(input_ticks.Size());
-        if (input_ticks.Size() > 0)
+        const int DEFAULT_MESSAGE_BUFFER_SIZE = 1280;
+        public enum InputMessageKey
         {
-            var input_keys = input_ticks.Keys();
-            input_keys.Sort();
-            buffer.PutU32(input_keys[0]);
-            foreach (var input_key in input_keys)
-            {
-                var input = input_ticks[input_key];
-                buffer.PutU16(input.Size());
-                buffer.PutData(input);
-
-            }
+            NEXT_INPUT_TICK_REQUESTED = 0,
+            INPUT = 1,
+            NEXT_HASH_TICK_REQUESTED = 2,
+            STATE_HASHES = 3,
         }
-        buffer.PutU32(msg[InputMessageKey.NEXT_HASH_TICK_REQUESTED]);
 
-        var state_hashes = msg[InputMessageKey.STATE_HASHES];
-        buffer.PutU8(state_hashes.Size());
-        if (state_hashes.Size() > 0)
+        private byte[] serialize_input(GDC.Dictionary input) => SerializeInput(input);
+
+        public virtual byte[] SerializeInput(GDC.Dictionary input)
         {
-            var state_hash_keys = state_hashes.Keys();
-            state_hash_keys.Sort();
-            buffer.PutU32(state_hash_keys[0]);
-            foreach (var state_hash_key in state_hash_keys)
-            {
-                buffer.PutU32(state_hashes[state_hash_key]);
-
-            }
+            return GD.Var2Bytes(input);
         }
-        buffer.Resize(buffer.GetPosition());
-        return buffer.data_array;
 
+        private GDC.Dictionary unserialize_input(byte[] serialized) => UnserializeInput(serialized);
+
+        public virtual GDC.Dictionary UnserializeInput(byte[] serialized)
+        {
+            return (GDC.Dictionary)GD.Bytes2Var(serialized);
+        }
+
+        private byte[] serialize_message(GDC.Dictionary msg) => SerializeMessage(msg);
+
+        public virtual byte[] SerializeMessage(GDC.Dictionary msg)
+        {
+            var buffer = new StreamPeerBuffer();
+            buffer.Resize(DEFAULT_MESSAGE_BUFFER_SIZE);
+
+            buffer.Put32((int)msg[(int)InputMessageKey.NEXT_INPUT_TICK_REQUESTED]);
+
+            GDC.Dictionary inputTicks = (GDC.Dictionary)msg[(int)InputMessageKey.INPUT];
+            buffer.PutU8((byte)inputTicks.Count);
+            if (inputTicks.Count > 0)
+            {
+                var inputKeys = inputTicks.Keys.OfType<int>().OrderBy((key) => key);
+                buffer.Put32(inputKeys.First());
+                foreach (var inputKey in inputKeys)
+                {
+                    var input = (byte[])inputTicks[inputKey];
+                    buffer.PutU16(Convert.ToUInt16(input.Length));
+                    buffer.PutData(input);
+                }
+            }
+
+            buffer.Put32((int)msg[(int)InputMessageKey.NEXT_HASH_TICK_REQUESTED]);
+
+            GDC.Dictionary stateHashes = (GDC.Dictionary)msg[(int)InputMessageKey.STATE_HASHES];
+            buffer.PutU8(Convert.ToByte(stateHashes.Count));
+            if (stateHashes.Count > 0)
+            {
+                var stateHashKeys = stateHashes.Keys.OfType<int>().OrderBy((key) => key);
+                buffer.Put32(stateHashKeys.First());
+                foreach (var stateHashKey in stateHashKeys)
+                    // HACK: Currently Godot marshalls all GDScript ints into C# ints, even though they
+                    //       have widly different ranges. GDScript ints are 64-bit, while C# ints are
+                    //       32-bit.
+                    //       https://github.com/godotengine/godot/issues/57141
+                    buffer.Put32((int)stateHashes[stateHashKey]);
+            }
+
+            buffer.Resize(buffer.GetPosition());
+            return buffer.DataArray;
+        }
+
+        private GDC.Dictionary unserialize_message(byte[] serialized) => UnserializeMessage(serialized);
+
+        public virtual GDC.Dictionary UnserializeMessage(byte[] serialized)
+        {
+            var buffer = new StreamPeerBuffer();
+            buffer.PutData(serialized);
+            buffer.Seek(0);
+
+            var msg = new GDC.Dictionary();
+            msg[(int)InputMessageKey.INPUT] = new GDC.Dictionary();
+            msg[(int)InputMessageKey.STATE_HASHES] = new GDC.Dictionary();
+
+            msg[(int)InputMessageKey.NEXT_INPUT_TICK_REQUESTED] = buffer.GetU32();
+
+            var inputTickCount = buffer.GetU8();
+            if (inputTickCount > 0)
+            {
+                var inputTick = buffer.GetU32();
+                for (int i = 0; i < inputTickCount; i++)
+                {
+                    var inputSize = buffer.GetU16();
+                    ((GDC.Dictionary)msg[(int)InputMessageKey.INPUT])[inputTick] = buffer.GetData(inputSize)[1];
+                    inputTick += 1;
+                }
+            }
+
+            msg[(int)InputMessageKey.NEXT_HASH_TICK_REQUESTED] = buffer.GetU32();
+
+            var hashTickCount = buffer.GetU8();
+            if (hashTickCount > 0)
+            {
+                var hashTick = buffer.GetU32();
+                for (int i = 0; i < hashTickCount; i++)
+                {
+                    ((GDC.Dictionary)msg[(int)InputMessageKey.STATE_HASHES])[hashTick] = buffer.GetU32();
+                    hashTick += 1;
+                }
+            }
+
+            return msg;
+        }
     }
-
-    public GDC.Dictionary UnserializeMessage(__TYPE serialized)
-    {
-        var buffer = new StreamPeerBuffer()
-
-        buffer.PutData(serialized);
-        buffer.Seek(0);
-
-        GDC.Dictionary msg = new GDC.Dictionary(){
-            InputMessageKey.INPUT: new GDC.Dictionary() { },
-			InputMessageKey.STATE_HASHES: new GDC.Dictionary() { },
-		};
-
-    msg[InputMessageKey.NEXT_INPUT_TICK_REQUESTED] = buffer.GetU32();
-		
-		var input_tick_count = buffer.GetU8();
-		if(input_tick_count > 0)
-		{
-			var input_tick = buffer.GetU32();
-			foreach(var input_tick_index in GD.Range(input_tick_count))
-			{
-				var input_size = buffer.GetU16();
-    msg[InputMessageKey.INPUT][input_tick] = buffer.GetData(input_size)[1];
-				input_tick += 1;
-		
-			}
-		}
-		msg[InputMessageKey.NEXT_HASH_TICK_REQUESTED] = buffer.GetU32();
-
-var hash_tick_count = buffer.GetU8();
-if (hash_tick_count > 0)
-{
-    var hash_tick = buffer.GetU32();
-    foreach (var hash_tick_index in GD.Range(hash_tick_count))
-    {
-        msg[InputMessageKey.STATE_HASHES][hash_tick] = buffer.GetU32();
-        hash_tick += 1;
-
-    }
-}
-return msg;
-	
-	
-	}
-	
-	
-	
 }

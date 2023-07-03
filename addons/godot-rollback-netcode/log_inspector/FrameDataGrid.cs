@@ -183,7 +183,7 @@ if ("timings" in prop_names)
 }
 	}
 	
-	public String _PropToString(GDC.Dictionary data, String prop_name, __TYPE prop_def = null)
+	public string _PropToString(GDC.Dictionary data, string prop_name, __TYPE prop_def = null)
 {
     if (prop_def == null)
     {

@@ -176,7 +176,7 @@ public class StateInputViewer : VBoxContainer
                 item.SetText(data_column, GD.Str(value));
 
             }
-            if (key is String && key.BeginsWith("/root/SyncManager/"))
+            if (key is string && key.BeginsWith("/root/SyncManager/"))
             {
                 item.collapsed = true;
 

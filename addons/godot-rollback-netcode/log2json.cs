@@ -48,7 +48,7 @@ public class log2json : SceneTree
 
     }
 
-    public bool Log2json(String input_filename, String output_filename)
+    public bool Log2json(string input_filename, string output_filename)
     {
         var infile = new File()
 

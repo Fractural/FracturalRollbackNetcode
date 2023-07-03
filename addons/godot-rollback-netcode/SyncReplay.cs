@@ -9,6 +9,8 @@ namespace Fractural.RollbackNetcode
 {
     public class SyncReplay : Node
     {
+        public SyncReplay Global { get; private set; }
+
         public const string GAME_PORT_SETTING = "network/rollback/log_inspector/replay_port";
         public const string MATCH_SCENE_PATH_SETTING = "network/rollback/log_inspector/replay_match_scene_path";
         public const string MATCH_SCENE_METHOD_SETTING = "network/rollback/log_inspector/replay_match_scene_method";
@@ -20,8 +22,18 @@ namespace Fractural.RollbackNetcode
 
         public bool _setting_up_match = false;
 
+        private SyncManager _syncManager;
+
         public override void _Ready()
         {
+            if (Global != null)
+            {
+                QueueFree();
+                return;
+            }
+            Global = this;
+            _syncManager = SyncManager.Global;
+
             if (OS.GetCmdlineArgs().Contains("replay"))
             {
                 if (!ProjectSettings.HasSetting(MATCH_SCENE_PATH_SETTING))
@@ -92,9 +104,7 @@ namespace Fractural.RollbackNetcode
                     {
                         var data = connection.GetVar();
                         if (data is GDC.Dictionary dict)
-                        {
                             ProcessMessage(dict);
-                        }
                     }
                 }
                 else if (status == StreamPeerTCP.Status.None)
@@ -139,7 +149,7 @@ namespace Fractural.RollbackNetcode
             }
         }
 
-        private void _ShowErrorAndQuit(String msg)
+        private void _ShowErrorAndQuit(string msg)
         {
             OS.Alert(msg);
             GetTree().Quit(1);
@@ -147,26 +157,23 @@ namespace Fractural.RollbackNetcode
 
         private void _DoSetupMatch1(int my_peer_id, GDC.Array peer_ids, GDC.Dictionary match_info)
         {
-            SyncManager.Stop();
-            SyncManager.ClearPeers();
+            _syncManager.Stop();
+            _syncManager.ClearPeers();
 
-            SyncManager.network_adaptor = new DummyNetworkAdaptor(my_peer_id);
+            _syncManager.network_adaptor = new DummyNetworkAdaptor(my_peer_id);
 
-            SyncManager.mechanized = true;
+            _syncManager.mechanized = true;
 
-            foreach (var peer_id in peer_ids)
-            {
-                SyncManager.AddPeer(peer_id);
+            foreach (int peer_id in peer_ids)
+                _syncManager.AddPeer(peer_id);
 
-            }
-            if (GetTree().ChangeScene(match_scene_path) != OK)
+            if (GetTree().ChangeScene(match_scene_path) != Error.Ok)
             {
                 _ShowErrorAndQuit($"Unable to change scene to: {match_scene_path}");
                 return;
             }
             _setting_up_match = true;
             CallDeferred("_do_setup_match2", my_peer_id, peer_ids, match_info);
-
         }
 
         private void _DoSetupMatch2(int my_peer_id, GDC.Array peer_ids, GDC.Dictionary match_info)
@@ -178,18 +185,17 @@ namespace Fractural.RollbackNetcode
             {
                 _ShowErrorAndQuit($"Match scene has no such method: {match_scene_method}");
                 return;
-
-                // Call the scene's setup method.
             }
+            // Call the scene's setup method.
             Utils.CallInteropMethod(match_scene, match_scene_method, new GDC.Array() { my_peer_id, peer_ids, match_info });
 
-            SyncManager.Start();
+            _syncManager.Start();
         }
 
         private void _DoLoadState(GDC.Dictionary state)
         {
-            state = SyncManager.hash_serializer.Unserialize(state);
-            SyncManager._CallLoadState(state);
+            state = _syncManager.hash_serializer.Unserialize(state);
+            _syncManager._CallLoadState(state);
         }
 
         private void _DoExecuteFrame(GDC.Dictionary msg)
@@ -198,23 +204,23 @@ namespace Fractural.RollbackNetcode
             GDC.Dictionary input_frames_received = msg.Get("input_frames_received", new GDC.Dictionary() { });
             int rollback_ticks = msg.Get("rollback_ticks", 0);
 
-            input_frames_received = SyncManager.hash_serializer.Unserialize(input_frames_received);
-            SyncManager.mechanized_input_received = input_frames_received;
-            SyncManager.mechanized_rollback_ticks = rollback_ticks;
+            input_frames_received = _syncManager.hash_serializer.Unserialize(input_frames_received);
+            _syncManager.mechanized_input_received = input_frames_received;
+            _syncManager.mechanized_rollback_ticks = rollback_ticks;
 
             switch (frame_type)
             {
                 case Logger.FrameType.TICK:
-                    SyncManager.ExecuteMechanizedTick();
+                    _syncManager.ExecuteMechanizedTick();
                     break;
                 case Logger.FrameType.INTERPOLATION_FRAME:
-                    SyncManager.ExecuteMechanizedInterpolationFrame(msg["delta"]);
+                    _syncManager.ExecuteMechanizedInterpolationFrame(msg["delta"]);
                     break;
                 case Logger.FrameType.INTERFRAME:
-                    SyncManager.ExecuteMechanizedInterframe();
+                    _syncManager.ExecuteMechanizedInterframe();
                     break;
                 default:
-                    SyncManager.ResetMechanizedData();
+                    _syncManager.ResetMechanizedData();
                     break;
             }
         }

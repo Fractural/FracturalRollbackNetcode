@@ -12,7 +12,7 @@ public class FrameViewerTimeOffsetSetting : HBoxContainer
 
     [Signal] delegate void TimeOffsetChanged(value);
 
-    public void SetupTimeOffsetSetting(String _label, int _value)
+    public void SetupTimeOffsetSetting(string _label, int _value)
     {
         peer_label.text = _label;
         offset_value_field.value = _value;

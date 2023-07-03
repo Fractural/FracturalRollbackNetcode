@@ -168,7 +168,7 @@ namespace Fractural.RollbackNetcode
             peer_time_offsets.Clear();
         }
 
-        public void LoadLogFile(String path)
+        public void LoadLogFile(string path)
         {
             if (IsLoading())
             {

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Fractural.Utils;
 using Godot;
 using static Fractural.RollbackNetcode.LogData;
+using static Fractural.RollbackNetcode.SyncManager;
 using GDC = Godot.Collections;
 
 namespace Fractural.RollbackNetcode
@@ -160,11 +161,11 @@ namespace Fractural.RollbackNetcode
 
         }
 
-        public void WriteInput(int tick, GDC.Dictionary input)
+        public void WriteInput(int tick, IDictionary<int, InputForPlayer> input)
         {
             var inputDict = new GDC.Dictionary() { };
             foreach (var key in input.Keys)
-                inputDict[key] = _syncManager.hash_serializer.Serialize(input.Get<InputData>(key).input.Duplicate(true));
+                inputDict[key] = _syncManager.hash_serializer.Serialize(input[key].input.Duplicate(true));
             GDC.Dictionary data_to_write = new GDC.Dictionary()
             {
                 ["log_type"] = LogType.INPUT,
@@ -204,14 +205,14 @@ namespace Fractural.RollbackNetcode
             data["start_time"] = OS.GetSystemTimeMsecs();
         }
 
-        public void EndTick(int start_ticks_usecs)
+        public void EndTick(uint start_ticks_usecs)
         {
             data["end_time"] = OS.GetSystemTimeMsecs();
-            data["duration"] = (float)((int)Time.GetTicksUsec() - start_ticks_usecs) / 1000f;
+            data["duration"] = (float)((uint)Time.GetTicksUsec() - start_ticks_usecs) / 1000f;
             WriteCurrentData();
         }
 
-        public void SkipTick(int skip_reason, int start_ticks_usecs)
+        public void SkipTick(Logger.SkipReason skip_reason, uint start_ticks_usecs)
         {
             data["skipped"] = true;
             data["skip_reason"] = skip_reason;
@@ -224,20 +225,20 @@ namespace Fractural.RollbackNetcode
                 EndInterframe();
             data["frame_type"] = FrameType.INTERPOLATION_FRAME;
             data["tick"] = tick;
-            data["start_time"] = OS.GetSystemTimeMsecs();
+            data["start_time"] = (uint)OS.GetSystemTimeMsecs();
         }
 
-        public void EndInterpolationFrame(int start_ticks_usecs)
+        public void EndInterpolationFrame(uint start_ticks_usecs)
         {
-            data["end_time"] = OS.GetSystemTimeMsecs();
-            data["duration"] = (float)((int)Time.GetTicksUsec() - start_ticks_usecs) / 1000.0f;
+            data["end_time"] = (uint)OS.GetSystemTimeMsecs();
+            data["duration"] = (float)((uint)Time.GetTicksUsec() - start_ticks_usecs) / 1000.0f;
             WriteCurrentData();
         }
 
         public void LogFatalError(string msg)
         {
             if (!data.Contains("end_time"))
-                data["end_time"] = OS.GetSystemTimeMsecs();
+                data["end_time"] = (uint)OS.GetSystemTimeMsecs();
             data["fatal_error"] = true;
             data["fatal_error_message"] = msg;
             WriteCurrentData();
@@ -274,7 +275,7 @@ namespace Fractural.RollbackNetcode
         public void StartTiming(string timer)
         {
             System.Diagnostics.Debug.Assert(!_start_times.Contains(timer), $"Timer already exists: {timer}");
-            _start_times[timer] = (int)Time.GetTicksUsec();
+            _start_times[timer] = (uint)Time.GetTicksUsec();
         }
 
         public void StopTiming(string timer, bool accumulate = false)
@@ -282,7 +283,7 @@ namespace Fractural.RollbackNetcode
             System.Diagnostics.Debug.Assert(_start_times.Contains(timer), $"No such timer: {timer}");
             if (_start_times.Contains(timer))
             {
-                AddTiming(timer, (float)((int)Time.GetTicksUsec() - _start_times.Get<int>(timer)) / 1000f, accumulate);
+                AddTiming(timer, (float)((uint)Time.GetTicksUsec() - _start_times.Get<int>(timer)) / 1000f, accumulate);
                 _start_times.Remove(timer);
             }
         }

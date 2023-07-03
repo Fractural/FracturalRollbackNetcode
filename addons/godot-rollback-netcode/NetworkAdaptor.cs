@@ -26,6 +26,7 @@ namespace Fractural.RollbackNetcode
         public virtual void DetachNetworkAdaptor(SyncManager sync_manager) { }
         public virtual void StartNetworkAdaptor(SyncManager sync_manager) { }
         public virtual void StopNetworkAdaptor(SyncManager sync_manager) { }
+        public virtual void Poll() { }
 
         public abstract void SendPing(int peer_id, PingMessage msg);
         public abstract void SendPingBack(int peer_id, PingMessage msg);
@@ -35,6 +36,5 @@ namespace Fractural.RollbackNetcode
         public abstract bool IsNetworkHost();
         public abstract bool IsNetworkMasterForNode(Node node);
         public abstract int GetNetworkUniqueId();
-        public abstract void Poll();
     }
 }

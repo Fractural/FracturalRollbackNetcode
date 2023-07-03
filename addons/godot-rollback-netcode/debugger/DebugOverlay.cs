@@ -51,7 +51,7 @@ public class DebugOverlay : HBoxContainer
 
     }
 
-    public void AddMessage(int peer_id, String msg)
+    public void AddMessage(int peer_id, string msg)
     {
         var peer_status = _CreateOrGetPeerStatus(peer_id);
         peer_status.AddMessage(msg);

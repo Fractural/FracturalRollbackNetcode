@@ -24,7 +24,7 @@ public class PeerStatus : Control
 
     }
 
-    public void AddMessage(String msg)
+    public void AddMessage(string msg)
     {
         messages_field.text += "* " + msg + "\n";
 
