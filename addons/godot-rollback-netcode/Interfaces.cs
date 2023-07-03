@@ -41,7 +41,7 @@ namespace Fractural.RollbackNetcode
 
     public interface INetworkSpawnPreProcess
     {
-        void _NetworkSpawnPreProcess(GDC.Dictionary data);
+        GDC.Dictionary _NetworkSpawnPreProcess(GDC.Dictionary data);
     }
 
     public interface INetworkSpawn

@@ -353,18 +353,6 @@ namespace Fractural.RollbackNetcode
         public event SceneDespawnedDelegate SceneDespawned;
         public event Action InterpolationFrame;
 
-        public override void _EnterTree()
-        {
-            CustomProjectSettings.AddProjectSettings();
-        }
-
-        public override void _ExitTree()
-        {
-            if (Global == this)
-                Global = null;
-            StopLogging();
-        }
-
         public override void _Ready()
         {
             if (Global != null)
@@ -437,6 +425,25 @@ namespace Fractural.RollbackNetcode
             if (hash_serializer == null)
             {
                 SetHashSerializer(_CreateClassFromProjectSettings<HashSerializer>("network/rollback/classes/hash_serializer", DEFAULT_HASH_SERIALIZER_PATH));
+            }
+        }
+
+        public override void _EnterTree()
+        {
+            CustomProjectSettings.AddProjectSettings();
+        }
+
+        public override void _ExitTree()
+        {
+            StopLogging();
+        }
+
+        public override void _Notification(int what)
+        {
+            if (what == NotificationPredelete)
+            {
+                if (Global == this)
+                    Global = null;
             }
         }
 

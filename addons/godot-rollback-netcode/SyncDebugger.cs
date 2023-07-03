@@ -3,171 +3,157 @@ using System;
 using Godot;
 using GDC = Godot.Collections;
 
-
-public class SyncDebugger : Node
+namespace Fractural.RollbackNetcode
 {
 
-    public const var DebugOverlay = GD.Load("res://addons/godot-rollback-netcode/debugger/DebugOverlay.tscn");
-    public const var DebugStateComparer = GD.Load("res://addons/godot-rollback-netcode/DebugStateComparer.gd");
-
-    public const string JSON_INDENT = "    ";
-
-    private __TYPE _canvas_layer;
-    private __TYPE _debug_overlay;
-    public bool _debug_pressed = false;
-
-    public bool print_previous_state = false;
-
-    public void _Ready()
+    public class SyncDebugger : Node
     {
-        SyncManager.Connect("rollback_flagged", this, "_on_SyncManager_rollback_flagged");
-        SyncManager.Connect("prediction_missed", this, "_on_SyncManager_prediction_missed");
-        SyncManager.Connect("skip_ticks_flagged", this, "_on_SyncManager_skip_ticks_flagged");
-        SyncManager.Connect("remote_state_mismatch", this, "_on_SyncManager_remote_state_mismatch");
-        SyncManager.Connect("peer_pinged_back", this, "_on_SyncManager_peer_pinged_back");
-        SyncManager.Connect("state_loaded", this, "_on_SyncManager_state_loaded");
-        SyncManager.Connect("tick_finished", this, "_on_SyncManager_tick_finished");
+        public SyncDebugger Global { get; private set; }
 
-    }
+        public const var DebugOverlayPrefab = GD.Load("res://addons/godot-rollback-netcode/debugger/DebugOverlay.tscn");
 
-    public void CreateDebugOverlay(__TYPE overlay_instance = null)
-    {
-        if (_debug_overlay != null)
+        public const string JSON_INDENT = "    ";
+
+        public bool print_previous_state = false;
+
+        private CanvasLayer _canvas_layer;
+        private DebugOverlay _debug_overlay;
+        private bool _debug_pressed = false;
+        private SyncManager _syncManager;
+
+        public override void _Ready()
         {
-            _debug_overlay.QueueFree();
-            _canvas_layer.RemoveChild(_debug_overlay);
+            if (Global != null)
+            {
+                QueueFree();
+                return;
+            }
+            Global = this;
+            _syncManager = SyncManager.Global;
+
+            _syncManager.Connect("rollback_flagged", this, "_on_SyncManager_rollback_flagged");
+            _syncManager.Connect("prediction_missed", this, "_on_SyncManager_prediction_missed");
+            _syncManager.Connect("skip_ticks_flagged", this, "_on_SyncManager_skip_ticks_flagged");
+            _syncManager.Connect("remote_state_mismatch", this, "_on_SyncManager_remote_state_mismatch");
+            _syncManager.Connect("peer_pinged_back", this, "_on_SyncManager_peer_pinged_back");
+            _syncManager.Connect("state_loaded", this, "_on_SyncManager_state_loaded");
+            _syncManager.Connect("tick_finished", this, "_on_SyncManager_tick_finished");
 
         }
-        if (overlay_instance == null)
+
+        public override void _Notification(int what)
         {
-            overlay_instance = DebugOverlay.Instance();
+            if (what == NotificationPredelete)
+            {
+                if (Global == this)
+                    Global = null;
+            }
         }
-        if (_canvas_layer == null)
+
+
+        public void CreateDebugOverlay(DebugOverlay overlay_instance = null)
         {
-            _canvas_layer = new CanvasLayer()
+            if (_debug_overlay != null)
+            {
+                _debug_overlay.QueueFree();
+                _canvas_layer.RemoveChild(_debug_overlay);
 
-            AddChild(_canvas_layer);
-
+            }
+            if (overlay_instance == null)
+                overlay_instance = DebugOverlayPrefab.Instance<DebugOverlay>();
+            if (_canvas_layer == null)
+            {
+                _canvas_layer = new CanvasLayer();
+                AddChild(_canvas_layer);
+            }
+            _debug_overlay = overlay_instance;
+            _canvas_layer.AddChild(_debug_overlay);
         }
-        _debug_overlay = overlay_instance;
-        _canvas_layer.AddChild(_debug_overlay);
 
-    }
-
-    public void ShowDebugOverlay(bool _visible = true)
-    {
-        if (_visible && !_debug_overlay)
+        public void ShowDebugOverlay(bool _visible = true)
         {
-            CreateDebugOverlay();
+            if (_visible && _debug_overlay == null)
+                CreateDebugOverlay();
+            if (_debug_overlay != null)
+                _debug_overlay.Visible = _visible;
         }
-        if (_debug_overlay)
-        {
-            _debug_overlay.visible = _visible;
 
+        public void HideDebugOverlay()
+        {
+            if (_debug_overlay != null)
+                ShowDebugOverlay(false);
         }
-    }
 
-    public void HideDebugOverlay()
-    {
-        if (_debug_overlay)
+        public bool IsDebugOverlayShown()
         {
-            ShowDebugOverlay(false);
-
+            if (_debug_overlay != null)
+                return _debug_overlay.Visible;
+            return false;
         }
-    }
 
-    public bool IsDebugOverlayShown()
-    {
-        if (_debug_overlay)
+        public void _OnSyncManagerSkipTicksFlagged(int count)
         {
-            return _debug_overlay.visible;
+            GD.Print("-----");
+            GD.Print($"Skipping {count} local Tick(s) to adjust for peer advantage");
         }
-        return false;
 
-    }
-
-    public void _OnSyncManagerSkipTicksFlagged(int count)
-    {
-        Print("-----");
-        Print("Skipping %s local Tick(s) to adjust for peer advantage" % count);
-
-    }
-
-    public void _OnSyncManagerPredictionMissed(int tick, int peer_id, GDC.Dictionary local_input, GDC.Dictionary remote_input)
-    {
-        Print("-----");
-        Print("Prediction missed on tick %s for peer %s" % [tick, peer_id]);
-        Print("Received input: %s" % SyncManager.hash_serializer.Serialize(remote_input));
-        Print("Predicted input: %s" % SyncManager.hash_serializer.Serialize(local_input));
-
-        if (_debug_overlay)
+        public void _OnSyncManagerPredictionMissed(int tick, int peer_id, GDC.Dictionary local_input, GDC.Dictionary remote_input)
         {
-            _debug_overlay.AddMessage(peer_id, "%Rollback s %s ticks" % [tick, SyncManager.rollback_ticks]);
+            GD.Print("-----");
+            GD.Print($"Prediction missed on tick {tick} for peer {peer_id}");
+            GD.Print($"Received input: {_syncManager.hash_serializer.Serialize(remote_input)}");
+            GD.Print($"Predicted input: {_syncManager.hash_serializer.Serialize(local_input)}");
 
+            if (_debug_overlay != null)
+                _debug_overlay.AddMessage(peer_id, "%Rollback s %s ticks" % [tick, _syncManager.rollback_ticks]);
         }
-    }
 
-    public void _OnSyncManagerRollbackFlagged(int tick)
-    {
-        Print("-----");
-        Print("Rolling back to tick %s (rollback %s Tick(s))" % [tick, SyncManager.rollback_ticks]);
-
-    }
-
-    public void _OnSyncManagerRemoteStateMismatch(int tick, int peer_id, int local_hash, int remote_hash)
-    {
-        Print("-----");
-        Print("On tick %s, remote void State (%s) from %s doesn't match local State (%s)" % [tick, remote_hash, peer_id, local_hash]);
-
-        if (_debug_overlay)
+        public void _OnSyncManagerRollbackFlagged(int tick)
         {
-            _debug_overlay.AddMessage(peer_id, "%State s mismatch" % tick);
-
+            GD.Print("-----");
+            GD.Print($"Rolling back to tick {tick} (rollback {_syncManager.rollback_ticks} Tick(s))");
         }
-    }
 
-    public void _OnSyncManagerPeerPingedBack(SyncManager peer.Peer)
-    {
-        Print("-----");
-        Print("Peer %RTT s %s ms | local lag %s | remote lag %s | advantage %s" % [peer.peer_id, peer.rtt, peer.local_lag, peer.remote_lag, peer.calculated_advantage]);
-        if (_debug_overlay)
+        public void _OnSyncManagerRemoteStateMismatch(int tick, int peer_id, int local_hash, int remote_hash)
         {
-            _debug_overlay.UpdatePeer(peer);
+            GD.Print("-----");
+            GD.Print($"On tick {tick}, remote void State ({remote_hash}) from {peer_id} doesn't match local State ({local_hash})");
+
+            if (_debug_overlay != null)
+                _debug_overlay.AddMessage(peer_id, $"{tick}: State mismatch");
+        }
+
+        public void _OnSyncManagerPeerPingedBack(SyncManager.Peer peer)
+        {
+            GD.Print("-----");
+            GD.Print($"Peer {peer.peer_id}: RTT {peer.rtt} ms | local lag {peer.local_lag} | remote lag {peer.remote_lag} | advantage {peer.calculated_advantage}");
+            if (_debug_overlay != null)
+                _debug_overlay.UpdatePeer(peer);
+        }
+
+        public void _OnSyncManagerStateLoaded(int rollback_ticks)
+        {
 
         }
+
+        public void _OnSyncManagerTickFinished(bool is_rollback)
+        {
+
+        }
+
+        public void _UnhandledInput(InputEvent @event)
+        {
+            var action_pressed = @event.IsActionPressed("sync_debug");
+            if (action_pressed)
+            {
+                if (!_debug_pressed)
+                {
+                    _debug_pressed = true;
+                    ShowDebugOverlay(!IsDebugOverlayShown());
+                }
+            }
+            else
+                _debug_pressed = false;
+        }
     }
-
-    public void _OnSyncManagerStateLoaded(int rollback_ticks)
-    {
-
-    }
-
-    public void _OnSyncManagerTickFinished(bool is_rollback)
-    {
-
-    }
-
-    public void _UnhandledInput(InputEvent event)
-
-    {
-        var action_pressed = event.IsActionPressed("sync_debug");
-		if(action_pressed)
-		{
-			if(!_debug_pressed)
-			{
-				_debug_pressed = true;
-				ShowDebugOverlay(!is_debug_overlay_shown());
-}
-		}
-
-        else
-{
-    _debug_pressed = false;
-
-
-}
-	}
-	
-	
-	
 }

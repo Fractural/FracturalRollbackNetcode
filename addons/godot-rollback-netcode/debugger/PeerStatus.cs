@@ -14,7 +14,7 @@ public class PeerStatus : Control
     public onready var advantage_field = GetNode("VBoxContainer/GridContainer/AdvantageValue");
     public onready var messages_field = GetNode("VBoxContainer/MessagesValue");
 
-    public void UpdatePeer(SyncManager peer.Peer)
+    public void UpdatePeer(SyncManager.Peer peer)
     {
         peer_id_field.text = GD.Str(peer.peer_id);
         rtt_field.text = GD.Str(peer.rtt) + " ms";

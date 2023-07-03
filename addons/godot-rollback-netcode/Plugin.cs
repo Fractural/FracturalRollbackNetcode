@@ -3,67 +3,58 @@ using System;
 using Godot;
 using GDC = Godot.Collections;
 
-[Tool]
-public class Plugin : EditorPlugin
+namespace Fractural.RollbackNetcode
 {
-
-    public const var LogInspector = GD.Load("res://addons/godot-rollback-netcode/log_inspector/LogInspector.tscn");
-
-    public __TYPE log_inspector;
-
-    public void _EnterTree()
+    [Tool]
+    public class Plugin : EditorPlugin
     {
-        var project_settings_node = GD.Load("res://addons/godot-rollback-netcode/ProjectSettings.gd").new()
+        public PackedScene LogInspectorPrefab = GD.Load<PackedScene>("res://addons/godot-rollback-netcode/log_inspector/LogInspector.tscn");
 
-        project_settings_node.AddProjectSettings();
-        project_settings_node.Free();
+        public LogInspector log_inspector;
 
-        AddAutoloadSingleton("SyncManager", "res://addons/godot-rollback-netcode/SyncManager.gd");
-
-        log_inspector = LogInspector.Instance();
-        GetEditorInterface().GetBaseControl().AddChild(log_inspector);
-        log_inspector.SetEditorInterface(GetEditorInterface());
-        AddToolMenuItem("Log inspector...", this, "open_log_inspector");
-
-        if (!ProjectSettings.HasSetting("input/sync_debug"))
+        public override void _EnterTree()
         {
-            var sync_debug = new InputEventKey()
+            CustomProjectSettings.AddProjectSettings();
 
-            sync_debug.scancode = KEY_F11;
+            //AddAutoloadSingleton("SyncManager", "res://addons/godot-rollback-netcode/SyncManager.gd");
 
-            ProjectSettings.SetSetting("input/sync_debug", new GDC.Dictionary()
+            log_inspector = LogInspectorPrefab.Instance<LogInspector>();
+            GetEditorInterface().GetBaseControl().AddChild(log_inspector);
+            log_inspector.SetEditorInterface(GetEditorInterface());
+            AddToolMenuItem("Log inspector...", this, nameof(OpenLogInspector));
+
+            if (!ProjectSettings.HasSetting("input/sync_debug"))
             {
-                deadzone = 0.5,
-                events = new GDC.Array(){
-                    sync_debug,
-                },
-            });
+                var sync_debug = new InputEventKey();
+                sync_debug.Scancode = (uint)KeyList.F11;
 
-            // Cause the ProjectSettingsEditor to reload the input map from the
-            // ProjectSettings.
-            GetTree().root.GetChild(0).PropagateNotification(EditorSettings.NOTIFICATION_EDITOR_SETTINGS_CHANGED);
+                ProjectSettings.SetSetting("input/sync_debug", new GDC.Dictionary()
+                {
+                    ["deadzone"] = 0.5f,
+                    ["events"] = new GDC.Array(){
+                        sync_debug,
+                    },
+                });
 
+                // Cause the ProjectSettingsEditor to reload the input map from the
+                // ProjectSettings.
+                GetTree().Root.GetChild(0).PropagateNotification(EditorSettings.NotificationEditorSettingsChanged);
+            }
         }
-    }
 
-    public void OpenLogInspector(__TYPE ud)
-    {
-        log_inspector.PopupCenteredRatio();
-
-    }
-
-    public void _ExitTree()
-    {
-        RemoveToolMenuItem("Log inspector...");
-        if (log_inspector)
+        public override void _ExitTree()
         {
-            log_inspector.Free();
-            log_inspector = null;
+            RemoveToolMenuItem("Log inspector...");
+            if (log_inspector != null)
+            {
+                log_inspector.Free();
+                log_inspector = null;
+            }
+        }
 
-
+        public void OpenLogInspector(object userData)
+        {
+            log_inspector.PopupCenteredRatio();
         }
     }
-
-
-
 }

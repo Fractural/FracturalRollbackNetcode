@@ -3,94 +3,83 @@ using System;
 using Godot;
 using GDC = Godot.Collections;
 
-
-public class RPCNetworkAdaptor : "res://addons/godot-rollback-netcode/NetworkAdaptor.gd"
+namespace Fractural.RollbackNetcode
 {
-
-    public void SendPing(int peer_id, GDC.Dictionary msg)
+    public class RPCNetworkAdaptor : NetworkAdaptor
     {
-        RpcUnreliableId(peer_id, "_remote_ping", msg);
+        public override void SendPing(int peer_id, PingMessage msg)
+        {
+            RpcUnreliableId(peer_id, nameof(_RemotePing), msg.ToGDDict());
+        }
 
-    }
+        public override void SendPingBack(int peer_id, PingMessage msg)
+        {
+            RpcUnreliableId(peer_id, nameof(_RemotePingBack), msg);
+        }
 
-    public void _RemotePing(GDC.Dictionary msg)
-    {
-        var peer_id = GetTree().GetRpcSenderId();
-        EmitSignal("received_ping", peer_id, msg);
+        public override void SendRemoteStart(int peer_id)
+        {
+            RpcId(peer_id, nameof(_RemoteStart));
+        }
 
-    }
+        public override void SendRemoteStop(int peer_id)
+        {
+            RpcId(peer_id, nameof(_RemoteStop));
+        }
 
-    public void SendPingBack(int peer_id, GDC.Dictionary msg)
-    {
-        RpcUnreliableId(peer_id, "_remote_ping_back", msg);
+        public override void SendInputTick(int peer_id, byte[] msg)
+        {
+            RpcUnreliableId(peer_id, nameof(_Rit), msg);
+        }
 
-    }
+        public override bool IsNetworkHost()
+        {
+            return GetTree().IsNetworkServer();
+        }
 
-    public void _RemotePingBack(GDC.Dictionary msg)
-    {
-        var peer_id = GetTree().GetRpcSenderId();
-        EmitSignal("received_ping_back", peer_id, msg);
+        public override bool IsNetworkMasterForNode(Node node)
+        {
+            return node.IsNetworkMaster();
+        }
 
-    }
+        public override int GetNetworkUniqueId()
+        {
+            return GetTree().GetNetworkUniqueId();
+        }
 
-    public void SendRemoteStart(int peer_id)
-    {
-        RpcId(peer_id, "_remote_start");
+        protected void _RemotePing(GDC.Dictionary pingMessageDict)
+        {
+            var peer_id = GetTree().GetRpcSenderId();
 
-    }
+            var pingMessage = new PingMessage();
+            pingMessage.FromGDDict(pingMessageDict);
+            InvokeReceivedPing(peer_id, pingMessage);
+        }
 
-    public void _RemoteStart()
-    {
-        EmitSignal("received_remote_start");
+        protected void _RemotePingBack(GDC.Dictionary pingMessageDict)
+        {
+            var peer_id = GetTree().GetRpcSenderId();
 
-    }
+            var pingMessage = new PingMessage();
+            pingMessage.FromGDDict(pingMessageDict);
+            InvokeReceivedPingBack(peer_id, pingMessage);
+        }
 
-    public void SendRemoteStop(int peer_id)
-    {
-        RpcId(peer_id, "_remote_stop");
+        protected void _RemoteStart()
+        {
+            InvokeReceivedRemoteStart();
+        }
 
-    }
-
-    public void _RemoteStop()
-    {
-        EmitSignal("received_remote_stop");
-
-    }
-
-    public void SendInputTick(int peer_id, PoolByteArray msg)
-    {
-        RpcUnreliableId(peer_id, "_rit", msg);
-
-    }
-
-    public bool IsNetworkHost()
-    {
-        return GetTree().IsNetworkServer();
-
-    }
-
-    public bool IsNetworkMasterForNode(Node node)
-    {
-        return node.IsNetworkMaster();
-
-    }
-
-    public int GetNetworkUniqueId()
-    {
-        return GetTree().GetNetworkUniqueId();
+        protected void _RemoteStop()
+        {
+            InvokeReceivedRemoteStop();
+        }
 
         // _rit is short for _receive_input_tick. The method name ends up in each message
         // so, we're trying to keep it short.
+        protected void _Rit(byte[] msg)
+        {
+            InvokeReceivedInputTick(GetTree().GetRpcSenderId(), msg);
+        }
     }
-
-    public void _Rit(PoolByteArray msg)
-    {
-        EmitSignal("received_input_tick", GetTree().GetRpcSenderId(), msg);
-
-
-
-    }
-
-
-
 }
