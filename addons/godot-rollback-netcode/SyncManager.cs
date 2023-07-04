@@ -291,10 +291,10 @@ namespace Fractural.RollbackNetcode
 
         public bool _host_starting = false;
         public Timer _ping_timer;
+        public Logger _logger;
 
         private SpawnManager _spawn_manager;
         private SoundManager _sound_manager;
-        private Logger _logger;
         public int _input_buffer_start_tick;
 
         public int _state_buffer_start_tick;

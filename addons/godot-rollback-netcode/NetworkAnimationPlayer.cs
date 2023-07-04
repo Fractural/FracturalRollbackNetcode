@@ -1,84 +1,68 @@
 
 using System;
+using Fractural.Utils;
 using Godot;
 using GDC = Godot.Collections;
 
-
-public class NetworkAnimationPlayer : AnimationPlayer
+namespace Fractural.RollbackNetcode
 {
-
-    //class_name NetworkAnimationPlayer
-
-    [Export] public bool auto_reset = true;
-
-    public void _Ready()
+    public class NetworkAnimationPlayer : AnimationPlayer
     {
-        method_call_mode = AnimationPlayer.ANIMATION_METHOD_CALL_IMMEDIATE;
-        playback_process_mode = AnimationPlayer.ANIMATION_PROCESS_MANUAL;
-        AddToGroup("network_sync");
+        [Export] public bool auto_reset = true;
 
-    }
-
-    public void _NetworkProcess(GDC.Dictionary input)
-    {
-        if (IsPlaying())
+        public override void _Ready()
         {
-            Advance(SyncManager.tick_time);
-
+            MethodCallMode = AnimationPlayer.AnimationMethodCallMode.Immediate;
+            PlaybackProcessMode = AnimationPlayer.AnimationProcessMode.Manual;
+            AddToGroup("network_sync");
         }
-    }
 
-    public GDC.Dictionary _SaveState()
-    {
-        if (IsPlaying() && (!auto_reset || current_animation != "RESET"))
+        public void _NetworkProcess(GDC.Dictionary input)
         {
-            return new GDC.Dictionary()
+            if (IsPlaying())
+                Advance(SyncManager.Global.tick_time);
+        }
+
+        public GDC.Dictionary _SaveState()
+        {
+            if (IsPlaying() && (!auto_reset || CurrentAnimation != "RESET"))
             {
-                is_playing = true,
-                current_animation = current_animation,
-                current_position = current_animation_position,
-                current_speed = playback_speed,
-            };
-        }
-        else
-        {
-            return new GDC.Dictionary()
+                return new GDC.Dictionary()
+                {
+                    ["is_playing"] = true,
+                    ["current_animation"] = CurrentAnimation,
+                    ["current_position"] = CurrentAnimationPosition,
+                    ["current_speed"] = PlaybackSpeed,
+                };
+            }
+            else
             {
-                is_playing = false,
-                current_animation = "",
-                current_position = 0.0,
-                current_speed = 1;
-        };
-
-    }
-}
-
-public void _LoadState(GDC.Dictionary state)
-{
-    if (state["is_playing"])
-    {
-        if (!is_playing() || current_animation != state["current_animation"])
-        {
-            Play(state["current_animation"]);
+                return new GDC.Dictionary()
+                {
+                    ["is_playing"] = false,
+                    ["current_animation"] = "",
+                    ["current_position"] = 0f,
+                    ["current_speed"] = 1,
+                };
+            }
         }
-        Seek(state["current_position"], true);
-        playback_speed = state["current_speed"];
-    }
-    else if (IsPlaying())
-    {
-        if (auto_reset && HasAnimation("RESET"))
-        {
-            Play("RESET");
-        }
-        else
-        {
-            Stop();
 
-
+        public void _LoadState(GDC.Dictionary state)
+        {
+            if (state.Get<bool>("is_playing"))
+            {
+                if (!IsPlaying() || CurrentAnimation != state.Get<string>("current_animation"))
+                    Play(state.Get<string>("current_animation"));
+                Seek(state.Get<int>("current_position"), true);
+                PlaybackSpeed = state.Get<float>("current_speed");
+            }
+            else if (IsPlaying())
+            {
+                if (auto_reset && HasAnimation("RESET"))
+                    Play("RESET");
+                else
+                    Stop();
+            }
         }
     }
-}
-	
-	
-	
 }

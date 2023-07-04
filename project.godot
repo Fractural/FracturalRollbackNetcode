@@ -21,6 +21,10 @@ enabled=PoolStringArray( "res://addons/gd2cs.py/plugin.cfg" )
 config/ask_no_python=true
 config/python="py"
 
+[gdnative]
+
+singletons=[ "res://webrtc/webrtc.gdnlib", "res://webrtc_debug/webrtc_debug.gdnlib" ]
+
 [gui]
 
 common/drop_mouse_on_gui_input_disabled=true

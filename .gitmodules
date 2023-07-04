@@ -2,3 +2,7 @@
 	path = addons/FracturalCommons
 	url = https://github.com/fractural/fracturalcommons
 	branch = release
+[submodule "addons/GodotNakamWebRTCMono"]
+	path = addons/GodotNakamWebRTCMono
+	url = https://github.com/Fractural/GodotNakamaWebRTCMono
+	branch = release
