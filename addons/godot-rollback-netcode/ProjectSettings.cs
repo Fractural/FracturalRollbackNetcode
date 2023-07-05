@@ -52,11 +52,11 @@ namespace Fractural.RollbackNetcode
             _AddProjectSetting("network/rollback/limits/max_state_mismatch_count", Variant.Type.Int, 10, PropertyHint.Range, "0, 60");
 
             _AddProjectSetting("network/rollback/spawn_manager/reuse_despawned_nodes", Variant.Type.Bool, false);
-            _AddProjectSetting("network/rollback/sound_manager/default_sound_bus", Variant.Type.string, "Master");
+            _AddProjectSetting("network/rollback/sound_manager/default_sound_bus", Variant.Type.String, "Master");
 
-            _AddProjectSetting("network/rollback/classes/network_adaptor", Variant.Type.string, "", PropertyHint.File, "*.gd,*.cs");
-            _AddProjectSetting("network/rollback/classes/message_serializer", Variant.Type.string, "", PropertyHint.File, "*.gd,*.cs");
-            _AddProjectSetting("network/rollback/classes/hash_serializer", Variant.Type.string, "", PropertyHint.File, "*.gd,*.cs");
+            _AddProjectSetting("network/rollback/classes/network_adaptor", Variant.Type.String, "", PropertyHint.File, "*.gd,*.cs");
+            _AddProjectSetting("network/rollback/classes/message_serializer", Variant.Type.String, "", PropertyHint.File, "*.gd,*.cs");
+            _AddProjectSetting("network/rollback/classes/hash_serializer", Variant.Type.String, "", PropertyHint.File, "*.gd,*.cs");
 
             _AddProjectSetting("network/rollback/debug/rollback_ticks", Variant.Type.Int, 0, PropertyHint.Range, "0, 60");
             _AddProjectSetting("network/rollback/debug/random_rollback_ticks", Variant.Type.Int, 0, PropertyHint.Range, "0, 60");
@@ -67,9 +67,9 @@ namespace Fractural.RollbackNetcode
             _AddProjectSetting("network/rollback/debug/check_message_serializer_roundtrip", Variant.Type.Bool, false);
             _AddProjectSetting("network/rollback/debug/check_local_state_consistency", Variant.Type.Bool, false);
 
-            _AddProjectSetting("network/rollback/log_inspector/replay_match_scene_path", Variant.Type.string, "", PropertyHint.File, "*.tscn,*.scn");
-            _AddProjectSetting("network/rollback/log_inspector/replay_match_scene_method", Variant.Type.string, "setup_match_for_replay");
-            _AddProjectSetting("network/rollback/log_inspector/replay_arguments", Variant.Type.string, "replay");
+            _AddProjectSetting("network/rollback/log_inspector/replay_match_scene_path", Variant.Type.String, "", PropertyHint.File, "*.tscn,*.scn");
+            _AddProjectSetting("network/rollback/log_inspector/replay_match_scene_method", Variant.Type.String, "setup_match_for_replay");
+            _AddProjectSetting("network/rollback/log_inspector/replay_arguments", Variant.Type.String, "replay");
             _AddProjectSetting("network/rollback/log_inspector/replay_port", Variant.Type.Int, 49111);
         }
     }

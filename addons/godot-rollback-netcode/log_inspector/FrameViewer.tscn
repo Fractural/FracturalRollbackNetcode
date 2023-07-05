@@ -9,9 +9,6 @@
 anchor_right = 1.0
 anchor_bottom = 1.0
 script = ExtResource( 1 )
-__meta__ = {
-"_edit_use_anchors_": false
-}
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
 anchor_right = 1.0
@@ -21,7 +18,7 @@ __meta__ = {
 }
 
 [node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
-margin_right = 1280.0
+margin_right = 1024.0
 margin_bottom = 38.0
 rect_min_size = Vector2( 0, 34 )
 
@@ -80,7 +77,7 @@ text = "Seek only on replay peer"
 
 [node name="Separator1" type="Control" parent="VBoxContainer/HBoxContainer"]
 margin_left = 658.0
-margin_right = 810.0
+margin_right = 682.0
 margin_bottom = 38.0
 size_flags_horizontal = 3
 __meta__ = {
@@ -88,8 +85,8 @@ __meta__ = {
 }
 
 [node name="ReplayContainer" type="PanelContainer" parent="VBoxContainer/HBoxContainer"]
-margin_left = 814.0
-margin_right = 1056.0
+margin_left = 686.0
+margin_right = 928.0
 margin_bottom = 38.0
 
 [node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/HBoxContainer/ReplayContainer"]
@@ -113,8 +110,8 @@ size_flags_vertical = 4
 text = "Auto"
 
 [node name="Separator2" type="Control" parent="VBoxContainer/HBoxContainer"]
-margin_left = 1060.0
-margin_right = 1213.0
+margin_left = 932.0
+margin_right = 957.0
 margin_bottom = 38.0
 size_flags_horizontal = 3
 __meta__ = {
@@ -122,31 +119,31 @@ __meta__ = {
 }
 
 [node name="SettingsButton" type="Button" parent="VBoxContainer/HBoxContainer"]
-margin_left = 1217.0
+margin_left = 961.0
 margin_top = 9.0
-margin_right = 1280.0
+margin_right = 1024.0
 margin_bottom = 29.0
 size_flags_vertical = 4
 text = "Settings"
 
 [node name="VSplitContainer" type="VSplitContainer" parent="VBoxContainer"]
 margin_top = 42.0
-margin_right = 1280.0
-margin_bottom = 720.0
+margin_right = 1024.0
+margin_bottom = 600.0
 size_flags_vertical = 3
 
 [node name="DataGraph" parent="VBoxContainer/VSplitContainer" instance=ExtResource( 2 )]
 anchor_right = 0.0
 anchor_bottom = 0.0
-margin_right = 1280.0
-margin_bottom = 333.0
+margin_right = 1024.0
+margin_bottom = 273.0
 
 [node name="DataGrid" parent="VBoxContainer/VSplitContainer" instance=ExtResource( 4 )]
 anchor_right = 0.0
 anchor_bottom = 0.0
-margin_top = 345.0
-margin_right = 1280.0
-margin_bottom = 678.0
+margin_top = 285.0
+margin_right = 1024.0
+margin_bottom = 558.0
 size_flags_vertical = 3
 
 [node name="SettingsDialog" parent="." instance=ExtResource( 3 )]

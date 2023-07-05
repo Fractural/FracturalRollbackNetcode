@@ -1,4 +1,5 @@
 ﻿using Fractural.GodotCodeGenerator.Attributes;
+using Fractural.Utils;
 using Godot;
 using NakamaWebRTC;
 using System.Collections.Generic;
@@ -126,7 +127,7 @@ namespace NakamaWebRTCDemo
                 // Show MatchID if we're in a custom match to let more people join
                 args.MatchID = OnlineMatch.Global.MatchID;
             }
-                
+
             uiLayer.ShowScreen(nameof(LobbyScreen), args);
             foreach (var lobbyPlayer in lobbyScreen.LobbyPlayers)
                 lobbyPlayer.Status = LobbyPlayerStatus.Connected;
@@ -310,7 +311,7 @@ namespace NakamaWebRTCDemo
                 lobbyPlayer.Status = LobbyPlayerStatus.Connecting;
             }
         }
-        
+
         [RemoteSync]
         private void SyncMatchData(byte[] bytes)
         {

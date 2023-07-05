@@ -6,6 +6,7 @@ using NakamaWebRTC;
 using Nakama;
 using System.Threading.Tasks;
 using System.Net.Http;
+using Fractural.Utils;
 
 namespace NakamaWebRTCDemo
 {

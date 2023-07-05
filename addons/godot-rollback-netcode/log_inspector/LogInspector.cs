@@ -8,7 +8,7 @@ using GDC = Godot.Collections;
 namespace Fractural.RollbackNetcode
 {
     [Tool]
-    public partial class LogInspector : Control
+    public partial class LogInspector : WindowDialog
     {
         [OnReadyGet("FileDialog")]
         public FileDialog file_dialog;
@@ -48,7 +48,8 @@ namespace Fractural.RollbackNetcode
         // filePaths: string[]
         public GDC.Array _files_to_load = new GDC.Array() { };
 
-        public override void _Ready()
+        [OnReady]
+        public void RealReady()
         {
             data_description_label_default_text = data_description_label.Text;
             state_input_viewer.SetLogData(log_data);

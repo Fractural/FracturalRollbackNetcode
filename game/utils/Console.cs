@@ -7,7 +7,7 @@ namespace NakamaWebRTCDemo
     public partial class Console : Control
     {
         public static Console Global { get; private set; }
-        
+
         [OnReadyGet]
         private ColorRect tintRect;
         [OnReadyGet]
@@ -39,7 +39,7 @@ namespace NakamaWebRTCDemo
             }
         }
 
-        public static void Print(string text = "") 
+        public static void Print(string text = "")
         {
             GD.Print(text);
             Global.outputLabel.AppendBbcode($"{text}\n");

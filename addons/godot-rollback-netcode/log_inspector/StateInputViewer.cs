@@ -28,7 +28,8 @@ namespace Fractural.RollbackNetcode
         public ReplayServer replay_server;
         public int replay_peer_id;
 
-        public override void _Ready()
+        [OnReady]
+        public void RealReady()
         {
             foreach (var tree in new[] { input_mismatches_data_tree, state_mismatches_data_tree })
             {

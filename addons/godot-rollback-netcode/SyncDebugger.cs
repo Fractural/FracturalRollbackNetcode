@@ -10,7 +10,7 @@ namespace Fractural.RollbackNetcode
     {
         public SyncDebugger Global { get; private set; }
 
-        public const var DebugOverlayPrefab = GD.Load("res://addons/godot-rollback-netcode/debugger/DebugOverlay.tscn");
+        public readonly PackedScene DebugOverlayPrefab = GD.Load<PackedScene>("res://addons/godot-rollback-netcode/debugger/DebugOverlay.tscn");
 
         public const string JSON_INDENT = "    ";
 
@@ -111,7 +111,7 @@ namespace Fractural.RollbackNetcode
             GD.Print($"Predicted input: {_syncManager.hash_serializer.Serialize(local_input)}");
 
             if (_debug_overlay != null)
-                _debug_overlay.AddMessage(peer_id, "%Rollback s %s ticks" % [tick, _syncManager.rollback_ticks]);
+                _debug_overlay.AddMessage(peer_id, $"{tick}: Rollback {_syncManager.rollback_ticks} ticks");
         }
 
         public void _OnSyncManagerRollbackFlagged(int tick)
