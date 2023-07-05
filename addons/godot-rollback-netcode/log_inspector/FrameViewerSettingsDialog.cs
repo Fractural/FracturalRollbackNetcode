@@ -12,57 +12,66 @@ namespace Fractural.RollbackNetcode
     [Tool]
     public partial class FrameViewerSettingsDialog : WindowDialog
     {
-        public PackedScene TimeOffsetSettingPrefab = GD.Load<PackedScene>("res://addons/godot-rollback-netcode/log_inspector/FrameViewerTimeOffsetSetting.tscn");
+        private PackedScene TimeOffsetSettingPrefab = GD.Load<PackedScene>("res://addons/godot-rollback-netcode/log_inspector/FrameViewerTimeOffsetSetting.tscn");
 
         [OnReadyGet("MarginContainer/GridContainer/ShowNetworkArrows")]
-        public CheckBox show_network_arrows_field;
+        private CheckBox _showNetworkArrowsCheckBox;
         [OnReadyGet("MarginContainer/GridContainer/NetworkArrowsPeer1")]
-        public OptionButton network_arrows_peer1_field;
+        private OptionButton _networkArrowsPeer1OptionButton;
         [OnReadyGet("MarginContainer/GridContainer/NetworkArrowsPeer2")]
-        public OptionButton network_arrows_peer2_field;
+        private OptionButton _networkArrowsPeer2OptionButton;
         [OnReadyGet("MarginContainer/GridContainer/ShowRollbackTicks")]
-        public CheckBox show_rollback_ticks_field;
+        private CheckBox _showRollbackTicksCheckBox;
         [OnReadyGet("MarginContainer/GridContainer/MaxRollbackTicks")]
-        public LineEdit max_rollback_ticks_field;
+        private LineEdit _maxRollbackTicksLineEdit;
         [OnReadyGet("MarginContainer/GridContainer/TimeOffsetContainer")]
-        public VBoxContainer time_offset_container;
+        private VBoxContainer time_offset_container;
 
-        public LogData log_data;
-        public FrameDataGraph data_graph;
-        public FrameDataGrid data_grid;
+        private LogData _logData;
+        private FrameDataGraph _dataGraph;
+        private FrameDataGrid _dataGrid;
 
-        public void SetupSettingsDialog(LogData _log_data, FrameDataGraph _data_graph, FrameDataGrid _data_grid)
+        [OnReady]
+        public void RealReady()
         {
-            log_data = _log_data;
-            data_graph = _data_graph;
-            data_grid = _data_grid;
+            _showNetworkArrowsCheckBox.Connect("toggled", this, nameof(_OnShowNetworkArrowsToggled));
+            _networkArrowsPeer1OptionButton.Connect("item_selected", this, nameof(_OnNetworkArrowsPeer1ItemSelected));
+            _networkArrowsPeer2OptionButton.Connect("item_selected", this, nameof(_OnNetworkArrowsPeer2ItemSelected));
+            _showRollbackTicksCheckBox.Connect("pressed", this, nameof(_OnShowRollbackTicksPressed));
+            _maxRollbackTicksLineEdit.Connect("text_changed", this, nameof(_OnMaxRollbackTicksTextChanged));
+        }
+
+        public void Construct(LogData logData, FrameDataGraph dataGraph, FrameDataGrid dataGrid)
+        {
+            _logData = logData;
+            _dataGraph = dataGraph;
+            _dataGrid = dataGrid;
             RefreshFromLogData();
         }
 
         public void RefreshFromLogData()
         {
-            _RebuildPeerOptions(network_arrows_peer1_field);
-            _RebuildPeerOptions(network_arrows_peer2_field);
+            _RebuildPeerOptions(_networkArrowsPeer1OptionButton);
+            _RebuildPeerOptions(_networkArrowsPeer2OptionButton);
             _RebuildPeerTimeOffsetFields();
 
-            show_network_arrows_field.Pressed = data_graph.canvas.show_network_arrows;
-            var network_arrow_peers = new List<int>(data_graph.canvas.network_arrow_peers.Cast<int>());
+            _showNetworkArrowsCheckBox.Pressed = _dataGraph.canvas.show_network_arrows;
+            var network_arrow_peers = new List<int>(_dataGraph.canvas.network_arrow_peers.Cast<int>());
             network_arrow_peers.Sort();
             if (network_arrow_peers.Count > 0)
-                network_arrows_peer1_field.Select(network_arrows_peer1_field.GetItemIndex(network_arrow_peers[0]));
+                _networkArrowsPeer1OptionButton.Select(_networkArrowsPeer1OptionButton.GetItemIndex(network_arrow_peers[0]));
             if (network_arrow_peers.Count > 1)
-                network_arrows_peer2_field.Select(network_arrows_peer2_field.GetItemIndex(network_arrow_peers[1]));
+                _networkArrowsPeer2OptionButton.Select(_networkArrowsPeer2OptionButton.GetItemIndex(network_arrow_peers[1]));
 
-            show_rollback_ticks_field.Pressed = data_graph.canvas.show_rollback_ticks;
-            max_rollback_ticks_field.Text = GD.Str(data_graph.canvas.max_rollback_ticks);
-
+            _showRollbackTicksCheckBox.Pressed = _dataGraph.canvas.show_rollback_ticks;
+            _maxRollbackTicksLineEdit.Text = GD.Str(_dataGraph.canvas.max_rollback_ticks);
         }
 
         public void _RebuildPeerOptions(OptionButton option_button)
         {
             var value = option_button.GetSelectedId();
             option_button.Clear();
-            foreach (int peer_id in log_data.peer_ids)
+            foreach (int peer_id in _logData.peer_ids)
                 option_button.AddItem($"Peer {peer_id}", peer_id);
             if (option_button.GetSelectedId() != value)
                 option_button.Select(option_button.GetItemIndex(value));
@@ -78,39 +87,39 @@ namespace Fractural.RollbackNetcode
                 child.QueueFree();
             }
             // Re-create new fields && connect the signals.
-            foreach (int peer_id in log_data.peer_ids)
+            foreach (int peer_id in _logData.peer_ids)
             {
                 var child = TimeOffsetSettingPrefab.Instance<FrameViewerTimeOffsetSetting>();
                 child.Name = GD.Str(peer_id);
                 time_offset_container.AddChild(child);
-                child.SetupTimeOffsetSetting(peer_id, $"Peer {peer_id}", log_data.peer_time_offsets.Get<int>(peer_id));
+                child.Construct(peer_id, $"Peer {peer_id}", _logData.peer_time_offsets.Get<int>(peer_id));
                 child.TimeOffsetChanged += _OnPeerTimeOffsetChanged;
             }
         }
 
         public void _OnPeerTimeOffsetChanged(int value, int peer_id)
         {
-            log_data.SetPeerTimeOffset(peer_id, value);
+            _logData.SetPeerTimeOffset(peer_id, value);
         }
 
         public void UpdateNetworkArrows()
         {
-            if (show_network_arrows_field.Pressed)
+            if (_showNetworkArrowsCheckBox.Pressed)
             {
-                if (network_arrows_peer1_field.GetSelectedId() != network_arrows_peer2_field.GetSelectedId())
+                if (_networkArrowsPeer1OptionButton.GetSelectedId() != _networkArrowsPeer2OptionButton.GetSelectedId())
                 {
-                    data_graph.canvas.show_network_arrows = true;
-                    data_graph.canvas.network_arrow_peers = new GDC.Array(){
-                    network_arrows_peer1_field.GetSelectedId(),
-                    network_arrows_peer2_field.GetSelectedId(),
+                    _dataGraph.canvas.show_network_arrows = true;
+                    _dataGraph.canvas.network_arrow_peers = new GDC.Array(){
+                    _networkArrowsPeer1OptionButton.GetSelectedId(),
+                    _networkArrowsPeer2OptionButton.GetSelectedId(),
                 };
-                    data_graph.canvas.Update();
+                    _dataGraph.canvas.Update();
                 }
             }
             else
             {
-                data_graph.canvas.show_network_arrows = false;
-                data_graph.canvas.Update();
+                _dataGraph.canvas.show_network_arrows = false;
+                _dataGraph.canvas.Update();
             }
         }
 
@@ -131,20 +140,20 @@ namespace Fractural.RollbackNetcode
 
         public void _OnShowRollbackTicksPressed()
         {
-            data_graph.canvas.show_rollback_ticks = show_rollback_ticks_field.Pressed;
-            data_graph.canvas.Update();
+            _dataGraph.canvas.show_rollback_ticks = _showRollbackTicksCheckBox.Pressed;
+            _dataGraph.canvas.Update();
         }
 
         public void _OnMaxRollbackTicksTextChanged(string new_text)
         {
-            var value = max_rollback_ticks_field.Text;
+            var value = _maxRollbackTicksLineEdit.Text;
             if (value.IsValidInteger())
             {
                 var value_int = value.ToInt();
                 if (value_int > 0)
                 {
-                    data_graph.canvas.max_rollback_ticks = value_int;
-                    data_graph.canvas.Update();
+                    _dataGraph.canvas.max_rollback_ticks = value_int;
+                    _dataGraph.canvas.Update();
                 }
             }
         }

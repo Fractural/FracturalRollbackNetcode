@@ -76,7 +76,7 @@ namespace Fractural.RollbackNetcode
         public delegate void StartTimeChangedDelegate(int start_time);
         public event StartTimeChangedDelegate StartTimeChanged;
 
-        public void SetLogData(LogData _log_data)
+        public void Construct(LogData _log_data)
         {
             log_data = _log_data;
         }

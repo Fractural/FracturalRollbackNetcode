@@ -24,7 +24,7 @@ namespace Fractural.RollbackNetcode
         public GDC.Dictionary SerializeDictionary(GDC.Dictionary value)
         {
             GDC.Dictionary serialized = new GDC.Dictionary() { };
-            foreach (var key in value)
+            foreach (var key in value.Keys)
                 serialized[key] = Serialize(value[key]);
             return serialized;
         }

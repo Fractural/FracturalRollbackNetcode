@@ -9,7 +9,7 @@ namespace Fractural.RollbackNetcode
 {
     public class SyncReplay : Node
     {
-        public SyncReplay Global { get; private set; }
+        public static SyncReplay Global { get; private set; }
 
         public const string GAME_PORT_SETTING = "network/rollback/log_inspector/replay_port";
         public const string MATCH_SCENE_PATH_SETTING = "network/rollback/log_inspector/replay_match_scene_path";

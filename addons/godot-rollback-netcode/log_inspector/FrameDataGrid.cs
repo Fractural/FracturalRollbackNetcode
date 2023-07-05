@@ -36,7 +36,7 @@ namespace Fractural.RollbackNetcode
 
         public GDC.Dictionary _property_definitions = new GDC.Dictionary() { };
 
-        public void SetLogData(LogData _log_data)
+        public void Construct(LogData _log_data)
         {
             log_data = _log_data;
         }

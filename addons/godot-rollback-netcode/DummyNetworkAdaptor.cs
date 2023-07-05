@@ -7,12 +7,12 @@ namespace Fractural.RollbackNetcode
 {
     public class DummyNetworkAdaptor : NetworkAdaptor
     {
-        public int my_peer_id;
+        private int _myPeerId = 1;
 
         public DummyNetworkAdaptor() { }
-        public DummyNetworkAdaptor(int _my_peer_id = 1)
+        public DummyNetworkAdaptor(int myPeerId)
         {
-            my_peer_id = _my_peer_id;
+            _myPeerId = myPeerId;
         }
 
         public override void SendPing(int peer_id, PingMessage msg)
@@ -42,17 +42,17 @@ namespace Fractural.RollbackNetcode
 
         public override bool IsNetworkHost()
         {
-            return my_peer_id == 1;
+            return _myPeerId == 1;
         }
 
         public override bool IsNetworkMasterForNode(Node node)
         {
-            return node.GetNetworkMaster() == my_peer_id;
+            return node.GetNetworkMaster() == _myPeerId;
         }
 
         public override int GetNetworkUniqueId()
         {
-            return my_peer_id;
+            return _myPeerId;
         }
     }
 }

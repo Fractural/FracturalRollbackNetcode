@@ -11,76 +11,90 @@ namespace Fractural.RollbackNetcode
     [Tool]
     public partial class StateInputViewer : VBoxContainer
     {
-        public const string JSON_INDENT = "    ";
+        private const string JSON_INDENT = "    ";
 
         [OnReadyGet("HBoxContainer/TickNumber")]
-        public SpinBox tick_number_field;
+        private SpinBox _tickNumberSpinBox;
+        [OnReadyGet("HBoxContainer/StartButton")]
+        private Button _startButton;
+        [OnReadyGet("HBoxContainer/PreviousMismatchButton")]
+        private Button _previousMismatchButton;
+        [OnReadyGet("HBoxContainer/NextMismatchButton")]
+        private Button _nextMismatchButton;
+        [OnReadyGet("HBoxContainer/EndButton")]
+        private Button _endButton;
         [OnReadyGet("GridContainer/InputPanel/InputDataTree")]
-        public Tree input_data_tree;
+        private Tree _inputDataTree;
         [OnReadyGet("GridContainer/InputMismatchesPanel/InputMismatchesDataTree")]
-        public Tree input_mismatches_data_tree;
+        private Tree _inputMismatchesDataTree;
         [OnReadyGet("GridContainer/StatePanel/StateDataTree")]
-        public Tree state_data_tree;
+        private Tree _stateDataTree;
         [OnReadyGet("GridContainer/StateMismatchesPanel/StateMismatchesDataTree")]
-        public Tree state_mismatches_data_tree;
+        private Tree _stateMismatchesDataTree;
 
-        public LogData log_data;
-        public ReplayServer replay_server;
-        public int replay_peer_id;
+        private LogData _logData;
+        private ReplayServer _replayServer;
+        private int _replayPeerId;
 
         [OnReady]
         public void RealReady()
         {
-            foreach (var tree in new[] { input_mismatches_data_tree, state_mismatches_data_tree })
+            foreach (var tree in new[] { _inputMismatchesDataTree, _stateMismatchesDataTree })
             {
                 tree.SetColumnTitle(1, "Local");
                 tree.SetColumnTitle(2, "Remote");
                 tree.ColumnTitlesVisible = true;
             }
+
+            _tickNumberSpinBox.Connect("value_changed", this, nameof(_OnTickNumberValueChanged));
+            _startButton.Connect("pressed", this, nameof(_OnStartButtonPressed));
+            _previousMismatchButton.Connect("pressed", this, nameof(_OnPreviousMismatchButtonPressed));
+            _nextMismatchButton.Connect("pressed", this, nameof(_OnNextMismatchButtonPressed));
+            _endButton.Connect("pressed", this, nameof(_OnEndButtonPressed));
         }
 
-        public void SetLogData(LogData _log_data)
+        public void Construct(LogData _log_data)
         {
-            log_data = _log_data;
+            _logData = _log_data;
         }
 
         public void SetReplayServer(ReplayServer _replay_server)
         {
-            replay_server = _replay_server;
+            _replayServer = _replay_server;
         }
 
         public void SetReplayPeerId(int _replay_peer_id)
         {
-            replay_peer_id = _replay_peer_id;
+            _replayPeerId = _replay_peer_id;
         }
 
         public void RefreshFromLogData()
         {
-            tick_number_field.MaxValue = log_data.max_tick;
-            _OnTickNumberValueChanged(tick_number_field.Value);
+            _tickNumberSpinBox.MaxValue = _logData.max_tick;
+            _OnTickNumberValueChanged(_tickNumberSpinBox.Value);
         }
 
         public void RefreshReplay()
         {
-            if (log_data.IsLoading())
+            if (_logData.IsLoading())
             {
                 return;
 
             }
-            if (replay_server != null && replay_server.IsConnectedToGame())
+            if (_replayServer != null && _replayServer.IsConnectedToGame())
             {
-                int tick = (int)(tick_number_field.Value);
-                LogData.StateData state_frame = log_data.state.Get<LogData.StateData>(tick, null);
+                int tick = (int)(_tickNumberSpinBox.Value);
+                LogData.StateData state_frame = _logData.state.Get<LogData.StateData>(tick, null);
                 if (state_frame != null)
                 {
                     GDC.Dictionary state_data;
 
-                    if (state_frame.mismatches.ContainsKey(replay_peer_id))
-                        state_data = state_frame.mismatches[replay_peer_id];
+                    if (state_frame.mismatches.ContainsKey(_replayPeerId))
+                        state_data = state_frame.mismatches[_replayPeerId];
                     else
                         state_data = state_frame.state;
 
-                    replay_server.SendMessage(new GDC.Dictionary()
+                    _replayServer.SendMessage(new GDC.Dictionary()
                     {
                         ["type"] = "load_state",
                         ["state"] = state_data,
@@ -92,39 +106,39 @@ namespace Fractural.RollbackNetcode
 
         public void Clear()
         {
-            tick_number_field.MaxValue = 0;
-            tick_number_field.Value = 0;
+            _tickNumberSpinBox.MaxValue = 0;
+            _tickNumberSpinBox.Value = 0;
             _ClearTrees();
         }
 
         public void _ClearTrees()
         {
-            input_data_tree.Clear();
-            input_mismatches_data_tree.Clear();
-            state_data_tree.Clear();
-            state_mismatches_data_tree.Clear();
+            _inputDataTree.Clear();
+            _inputMismatchesDataTree.Clear();
+            _stateDataTree.Clear();
+            _stateMismatchesDataTree.Clear();
         }
 
         public void _OnTickNumberValueChanged(double value)
         {
-            if (log_data.IsLoading())
+            if (_logData.IsLoading())
                 return;
             int tick = (int)(value);
 
-            LogData.InputData input_frame = log_data.input.Get<LogData.InputData>(tick, null);
-            LogData.StateData state_frame = log_data.state.Get<LogData.StateData>(tick, null);
+            LogData.InputData input_frame = _logData.input.Get<LogData.InputData>(tick, null);
+            LogData.StateData state_frame = _logData.state.Get<LogData.StateData>(tick, null);
 
             _ClearTrees();
 
             if (input_frame != null)
             {
-                _CreateTreeItemsFromDictionary(input_data_tree, input_data_tree.CreateItem(), input_frame.input);
-                _CreateTreeFromMismatches(input_mismatches_data_tree, input_frame.input, input_frame.mismatches);
+                _CreateTreeItemsFromDictionary(_inputDataTree, _inputDataTree.CreateItem(), input_frame.input);
+                _CreateTreeFromMismatches(_inputMismatchesDataTree, input_frame.input, input_frame.mismatches);
             }
             if (state_frame != null)
             {
-                _CreateTreeItemsFromDictionary(state_data_tree, state_data_tree.CreateItem(), state_frame.state);
-                _CreateTreeFromMismatches(state_mismatches_data_tree, state_frame.state, state_frame.mismatches);
+                _CreateTreeItemsFromDictionary(_stateDataTree, _stateDataTree.CreateItem(), state_frame.state);
+                _CreateTreeFromMismatches(_stateMismatchesDataTree, state_frame.state, state_frame.mismatches);
             }
             RefreshReplay();
         }
@@ -251,11 +265,11 @@ namespace Fractural.RollbackNetcode
 
         public void _OnPreviousMismatchButtonPressed()
         {
-            if (log_data.IsLoading())
+            if (_logData.IsLoading())
                 return;
-            var current_tick = (int)(tick_number_field.Value);
+            var current_tick = (int)(_tickNumberSpinBox.Value);
             int previous_mismatch = -1;
-            foreach (int mismatch_tick in log_data.mismatches)
+            foreach (int mismatch_tick in _logData.mismatches)
             {
                 if (mismatch_tick < current_tick)
                     previous_mismatch = mismatch_tick;
@@ -263,16 +277,16 @@ namespace Fractural.RollbackNetcode
                     break;
             }
             if (previous_mismatch != -1)
-                tick_number_field.Value = previous_mismatch;
+                _tickNumberSpinBox.Value = previous_mismatch;
         }
 
         public void _OnNextMismatchButtonPressed()
         {
-            if (log_data.IsLoading())
+            if (_logData.IsLoading())
                 return;
-            var current_tick = (int)(tick_number_field.Value);
+            var current_tick = (int)(_tickNumberSpinBox.Value);
             int next_mismatch = -1;
-            foreach (int mismatch_tick in log_data.mismatches)
+            foreach (int mismatch_tick in _logData.mismatches)
             {
                 if (mismatch_tick > current_tick)
                 {
@@ -281,17 +295,17 @@ namespace Fractural.RollbackNetcode
                 }
             }
             if (next_mismatch != -1)
-                tick_number_field.Value = next_mismatch;
+                _tickNumberSpinBox.Value = next_mismatch;
         }
 
         public void _OnStartButtonPressed()
         {
-            tick_number_field.Value = 0;
+            _tickNumberSpinBox.Value = 0;
         }
 
         public void _OnEndButtonPressed()
         {
-            tick_number_field.Value = tick_number_field.MaxValue;
+            _tickNumberSpinBox.Value = _tickNumberSpinBox.MaxValue;
         }
     }
 }

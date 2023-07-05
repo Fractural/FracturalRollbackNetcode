@@ -13,7 +13,7 @@ namespace Fractural.RollbackNetcode
     {
         public static SyncManager Global { get; private set; }
 
-        public class Peer : Reference
+        public class Peer
         {
             public int peer_id;
             public int rtt;
@@ -778,7 +778,7 @@ namespace Fractural.RollbackNetcode
 
             // Call _NetworkPreprocess() && collect list of nodes with the other
             // virtual methods.
-            for (int i = nodes.Count; i >= 0; i--)
+            for (int i = nodes.Count - 1; i >= 0; i--)
             {
                 var node = nodes[i] as Node;
                 if (node.IsInsideTree() && !node.IsQueuedForDeletion())
@@ -1690,7 +1690,7 @@ namespace Fractural.RollbackNetcode
         public GDC.Dictionary _CleanDataForHashingRecursive(GDC.Dictionary input)
         {
             GDC.Dictionary cleaned = new GDC.Dictionary() { };
-            foreach (string key in input)
+            foreach (string key in input.Keys)
             {
                 if (key.BeginsWith("_"))
                     continue;

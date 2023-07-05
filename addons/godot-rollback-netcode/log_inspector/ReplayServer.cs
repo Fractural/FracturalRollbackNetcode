@@ -32,7 +32,7 @@ namespace Fractural.RollbackNetcode
         public event Action GameConnected;
         public event Action GameDisconnected;
 
-        public void SetEditorInterface(EditorInterface _editor_interface)
+        public void Construct(EditorInterface _editor_interface)
         {
             editor_interface = _editor_interface;
         }

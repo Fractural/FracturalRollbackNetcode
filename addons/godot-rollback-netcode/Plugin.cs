@@ -20,7 +20,7 @@ namespace Fractural.RollbackNetcode
 
             log_inspector = LogInspectorPrefab.Instance<LogInspector>();
             GetEditorInterface().GetBaseControl().AddChild(log_inspector);
-            log_inspector.SetEditorInterface(GetEditorInterface());
+            log_inspector.Construct(GetEditorInterface());
             AddToolMenuItem("Log inspector...", this, nameof(OpenLogInspector));
 
             if (!ProjectSettings.HasSetting("input/sync_debug"))

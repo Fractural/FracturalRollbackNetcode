@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=2]
 
-[ext_resource path="res://addons/godot-rollback-netcode/log_inspector/FrameDataGrid.gd" type="Script" id=1]
+[ext_resource path="res://addons/godot-rollback-netcode/log_inspector/FrameDataGrid.cs" type="Script" id=1]
 
 [node name="FrameViewerDataGrid" type="Tree"]
 anchor_right = 1.0

@@ -11,104 +11,127 @@ namespace Fractural.RollbackNetcode
     public partial class FrameViewer : Control
     {
         [OnReadyGet("VBoxContainer/HBoxContainer/Time")]
-        public SpinBox time_field;
+        private SpinBox _timeSpinBox;
+        [OnReadyGet("VBoxContainer/HBoxContainer/StartButton")]
+        private Button _startButton;
+        [OnReadyGet("VBoxContainer/HBoxContainer/PreviousFrameButton")]
+        private Button _previousFrameButton;
+        [OnReadyGet("VBoxContainer/HBoxContainer/NextFrameButton")]
+        private Button _nextFrameButton;
+        [OnReadyGet("VBoxContainer/HBoxContainer/EndButton")]
+        private Button _endButton;
         [OnReadyGet("VBoxContainer/HBoxContainer/SeekOnReplayPeerField")]
-        public CheckBox seek_on_replay_peer_field;
+        private CheckBox _seekOnReplayPeerCheckBox;
         [OnReadyGet("VBoxContainer/HBoxContainer/ReplayContainer/HBoxContainer/AutoReplayToCurrentField")]
-        public CheckBox auto_replay_to_current_field;
+        private CheckBox _autoReplayToCurrentCheckbox;
         [OnReadyGet("VBoxContainer/HBoxContainer/ReplayContainer/HBoxContainer/ReplayToCurrentButton")]
-        public Button replay_to_current_button;
+        private Button _replayToCurrentButton;
+        [OnReadyGet("VBoxContainer/HBoxContainer/SettingsButton")]
+        private Button _settingsButton;
         [OnReadyGet("VBoxContainer/VSplitContainer/DataGraph")]
-        public FrameDataGraph data_graph;
+        private FrameDataGraph _dataGraph;
         [OnReadyGet("VBoxContainer/VSplitContainer/DataGrid")]
-        public FrameDataGrid data_grid;
+        private FrameDataGrid _dataGrid;
         [OnReadyGet("SettingsDialog")]
-        public FrameViewerSettingsDialog settings_dialog;
+        private FrameViewerSettingsDialog _settingsDialog;
 
-        public LogData log_data;
-        public ReplayServer replay_server;
-        public int replay_peer_id;
+        private LogData _logData;
+        private ReplayServer _replayServer;
+        private int _replayPeerId;
 
-        public int replay_frame = -1;
-        public int replay_last_interpolation_frame_time = 0;
+        private int _replayFrame = -1;
+        private int _replayLastInterpolationFrameTime = 0;
 
         // [peerId: int]: currentFrame: int
-        public GDC.Dictionary current_frames = new GDC.Dictionary() { };
+        private GDC.Dictionary _currentFrames = new GDC.Dictionary() { };
 
-        public void SetLogData(LogData _log_data)
+        [OnReady]
+        public void RealReady()
         {
-            log_data = _log_data;
-            data_graph.SetLogData(log_data);
-            data_grid.SetLogData(log_data);
-            settings_dialog.SetupSettingsDialog(log_data, data_graph, data_grid);
+            _timeSpinBox.Connect("value_changed", this, nameof(_OnTimeValueChanged));
+            _startButton.Connect("pressed", this, nameof(_OnStartButtonPressed));
+            _previousFrameButton.Connect("pressed", this, nameof(_OnPreviousFrameButtonPressed));
+            _nextFrameButton.Connect("pressed", this, nameof(_OnNextFrameButtonPressed));
+            _endButton.Connect("pressed", this, nameof(_OnEndButtonPressed));
+            _replayToCurrentButton.Connect("pressed", this, nameof(_OnReplayToCurrentButtonPressed));
+            _autoReplayToCurrentCheckbox.Connect("toggled", this, nameof(_OnAutoReplayToCurrentFieldToggled));
+            _settingsButton.Connect("pressed", this, nameof(_OnSettingsButtonPressed));
+        }
+
+        public void Construct(LogData _log_data)
+        {
+            _logData = _log_data;
+            _dataGraph.Construct(_logData);
+            _dataGrid.Construct(_logData);
+            _settingsDialog.Construct(_logData, _dataGraph, _dataGrid);
         }
 
         public void RefreshFromLogData()
         {
-            if (log_data.IsLoading())
+            if (_logData.IsLoading())
                 return;
-            time_field.MaxValue = log_data.end_time - log_data.start_time;
+            _timeSpinBox.MaxValue = _logData.end_time - _logData.start_time;
 
-            data_graph.RefreshFromLogData();
-            data_grid.RefreshFromLogData();
-            settings_dialog.RefreshFromLogData();
+            _dataGraph.RefreshFromLogData();
+            _dataGrid.RefreshFromLogData();
+            _settingsDialog.RefreshFromLogData();
 
-            replay_frame = -1;
-            _OnTimeValueChanged(time_field.Value);
+            _replayFrame = -1;
+            _OnTimeValueChanged(_timeSpinBox.Value);
         }
 
         public void SetReplayServer(ReplayServer _replay_server)
         {
-            if (replay_server != null)
-                replay_server.GameDisconnected -= _OnReplayServerGameDisconnected;
+            if (_replayServer != null)
+                _replayServer.GameDisconnected -= _OnReplayServerGameDisconnected;
 
-            replay_server = _replay_server;
-            if (replay_server != null)
-                replay_server.GameDisconnected += _OnReplayServerGameDisconnected;
+            _replayServer = _replay_server;
+            if (_replayServer != null)
+                _replayServer.GameDisconnected += _OnReplayServerGameDisconnected;
         }
 
         public void _OnReplayServerGameDisconnected()
         {
-            replay_frame = -1;
+            _replayFrame = -1;
         }
 
         public void SetReplayPeerId(int _replay_peer_id)
         {
-            replay_peer_id = _replay_peer_id;
+            _replayPeerId = _replay_peer_id;
         }
 
         public void RefreshReplay()
         {
-            replay_frame = -1;
-            if (auto_replay_to_current_field.Pressed)
+            _replayFrame = -1;
+            if (_autoReplayToCurrentCheckbox.Pressed)
                 ReplayToCurrentFrame();
         }
 
         public void Clear()
         {
-            current_frames.Clear();
+            _currentFrames.Clear();
             RefreshFromLogData();
         }
 
         public void _OnTimeValueChanged(double value)
         {
-            if (log_data.IsLoading())
+            if (_logData.IsLoading())
                 return;
             var time = (int)(value);
 
             // Update our tracking of the current frame.
-            foreach (int peer_id in log_data.peer_ids)
+            foreach (int peer_id in _logData.peer_ids)
             {
-                LogData.FrameData frame = log_data.GetFrameByTime(peer_id, log_data.start_time + time);
+                LogData.FrameData frame = _logData.GetFrameByTime(peer_id, _logData.start_time + time);
                 if (frame != null)
-                    current_frames[peer_id] = frame.frame;
+                    _currentFrames[peer_id] = frame.frame;
                 else
-                    current_frames[peer_id] = 0;
+                    _currentFrames[peer_id] = 0;
             }
-            data_graph.cursor_time = time;
-            data_grid.cursor_time = time;
+            _dataGraph.cursor_time = time;
+            _dataGrid.cursor_time = time;
 
-            if (auto_replay_to_current_field.Pressed)
+            if (_autoReplayToCurrentCheckbox.Pressed)
                 ReplayToCurrentFrame();
         }
 
@@ -119,31 +142,31 @@ namespace Fractural.RollbackNetcode
 
         public void JumpToPreviousFrame()
         {
-            if (log_data.IsLoading())
+            if (_logData.IsLoading())
                 return;
 
             int frame_time = 0;
 
-            if (seek_on_replay_peer_field.Pressed)
-                frame_time = _GetPreviousFrameTimeForPeer(replay_peer_id);
+            if (_seekOnReplayPeerCheckBox.Pressed)
+                frame_time = _GetPreviousFrameTimeForPeer(_replayPeerId);
             else
             {
-                foreach (int peer_id in current_frames)
+                foreach (int peer_id in _currentFrames)
                     frame_time = (int)(Mathf.Max(frame_time, _GetPreviousFrameTimeForPeer(peer_id)));
             }
-            if (frame_time > log_data.start_time)
-                time_field.Value = frame_time - log_data.start_time;
+            if (frame_time > _logData.start_time)
+                _timeSpinBox.Value = frame_time - _logData.start_time;
             else
-                time_field.Value = 0;
+                _timeSpinBox.Value = 0;
         }
 
         public int _GetPreviousFrameTimeForPeer(int peer_id)
         {
-            var frame_id = current_frames.Get<int>(peer_id);
+            var frame_id = _currentFrames.Get<int>(peer_id);
             if (frame_id > 0)
                 frame_id -= 1;
 
-            LogData.FrameData frame = log_data.GetFrame(peer_id, frame_id);
+            LogData.FrameData frame = _logData.GetFrame(peer_id, frame_id);
             return frame.start_time;
 
         }
@@ -156,39 +179,39 @@ namespace Fractural.RollbackNetcode
 
         public void JumpToNextFrame()
         {
-            if (log_data.IsLoading())
+            if (_logData.IsLoading())
             {
                 return;
 
             }
-            var frame_time = log_data.end_time;
+            var frame_time = _logData.end_time;
 
-            if (seek_on_replay_peer_field.Pressed)
+            if (_seekOnReplayPeerCheckBox.Pressed)
             {
-                frame_time = _GetNextFrameTimeForPeer(replay_peer_id);
+                frame_time = _GetNextFrameTimeForPeer(_replayPeerId);
             }
             else
             {
-                foreach (int peer_id in current_frames.Keys)
+                foreach (int peer_id in _currentFrames.Keys)
                 {
                     var peer_frame_time = _GetNextFrameTimeForPeer(peer_id);
                     if (peer_frame_time != 0)
                         frame_time = (int)(Mathf.Min(frame_time, _GetNextFrameTimeForPeer(peer_id)));
                 }
             }
-            if (frame_time > log_data.start_time)
-                time_field.Value = frame_time - log_data.start_time;
+            if (frame_time > _logData.start_time)
+                _timeSpinBox.Value = frame_time - _logData.start_time;
             else
-                time_field.Value = 0;
+                _timeSpinBox.Value = 0;
         }
 
         public int _GetNextFrameTimeForPeer(int peer_id)
         {
-            var frame_id = current_frames.Get<int>(peer_id);
-            if (frame_id < log_data.GetFrameCount(peer_id) - 1)
+            var frame_id = _currentFrames.Get<int>(peer_id);
+            if (frame_id < _logData.GetFrameCount(peer_id) - 1)
             {
                 frame_id += 1;
-                LogData.FrameData frame = log_data.GetFrame(peer_id, frame_id);
+                LogData.FrameData frame = _logData.GetFrame(peer_id, frame_id);
                 return frame.start_time;
             }
             return 0;
@@ -196,37 +219,37 @@ namespace Fractural.RollbackNetcode
 
         public void ReplayToCurrentFrame()
         {
-            if (replay_server == null && !replay_server.IsConnectedToGame())
+            if (_replayServer == null && !_replayServer.IsConnectedToGame())
                 return;
 
-            if (log_data.IsLoading())
+            if (_logData.IsLoading())
                 return;
-            if (log_data.peer_ids.Count == 0)
+            if (_logData.peer_ids.Count == 0)
                 return;
-            if (!current_frames.Contains(replay_peer_id))
+            if (!_currentFrames.Contains(_replayPeerId))
                 return;
-            int current_frame_id = current_frames.Get<int>(replay_peer_id);
+            int current_frame_id = _currentFrames.Get<int>(_replayPeerId);
 
             // If replay_frame is ahead of current frame, we have to replay from the beginning.
-            if (replay_frame > current_frame_id)
-                replay_frame = -1;
+            if (_replayFrame > current_frame_id)
+                _replayFrame = -1;
             // Reset replay.
-            if (replay_frame == -1)
+            if (_replayFrame == -1)
             {
-                replay_last_interpolation_frame_time = 0;
-                replay_server.SendMatchInfo(log_data, replay_peer_id);
+                _replayLastInterpolationFrameTime = 0;
+                _replayServer.SendMatchInfo(_logData, _replayPeerId);
             }
-            replay_frame += 1;
-            foreach (var frame_id in GD.Range(replay_frame, log_data.frames.Get<GDC.Array>(replay_peer_id).Count))
+            _replayFrame += 1;
+            foreach (var frame_id in GD.Range(_replayFrame, _logData.frames.Get<GDC.Array>(_replayPeerId).Count))
             {
                 if (frame_id > current_frame_id)
                 {
                     break;
                 }
-                LogData.FrameData frame_data = log_data.GetFrame(replay_peer_id, frame_id);
+                LogData.FrameData frame_data = _logData.GetFrame(_replayPeerId, frame_id);
                 _SendReplayFrameData(frame_data);
             }
-            replay_frame = current_frame_id;
+            _replayFrame = current_frame_id;
         }
 
         public void _SendReplayFrameData(LogData.FrameData frame_data)
@@ -248,28 +271,28 @@ namespace Fractural.RollbackNetcode
                 if (tick > 0)
                 {
                     // Get input for local peer.
-                    input_frames_received[replay_peer_id] = new GDC.Dictionary()
+                    input_frames_received[_replayPeerId] = new GDC.Dictionary()
                     {
-                        ["tick"] = log_data.input.Get<LogData.InputData>(tick).GetInputForPeer(replay_peer_id, replay_peer_id),
+                        ["tick"] = _logData.input.Get<LogData.InputData>(tick).GetInputForPeer(_replayPeerId, _replayPeerId),
                     };
                 }
-                replay_last_interpolation_frame_time = frame_data.data.Get<int>("end_time");
+                _replayLastInterpolationFrameTime = frame_data.data.Get<int>("end_time");
             }
             else if (frame_type == Logger.FrameType.INTERPOLATION_FRAME)
             {
                 var start_time = frame_data.data.Get<int>("start_time");
-                if (replay_last_interpolation_frame_time > 0)
-                    msg["delta"] = (start_time - replay_last_interpolation_frame_time) / 1000.0;
+                if (_replayLastInterpolationFrameTime > 0)
+                    msg["delta"] = (start_time - _replayLastInterpolationFrameTime) / 1000.0;
                 else
                 {
                     // If we can't know the actual delta, let's use a small value that's
                     // bigger than zero, arbitrarily 1.0/120.0
                     msg["delta"] = 0.00833333;
                 }
-                replay_last_interpolation_frame_time = start_time;
+                _replayLastInterpolationFrameTime = start_time;
             }
             // Get input received from each of the peers.
-            foreach (int peer_id in log_data.peer_ids)
+            foreach (int peer_id in _logData.peer_ids)
             {
                 GDC.Array ticks = frame_data.data.Get($"remote_ticks_received_from_{peer_id}", new GDC.Array() { });
                 if (ticks.Count > 0)
@@ -277,14 +300,14 @@ namespace Fractural.RollbackNetcode
                     GDC.Dictionary peer_input_ticks = new GDC.Dictionary() { };
                     foreach (int tick in ticks)
                     {
-                        peer_input_ticks[tick] = log_data.input.Get<LogData.InputData>(tick).GetInputForPeer(peer_id, replay_peer_id);
+                        peer_input_ticks[tick] = _logData.input.Get<LogData.InputData>(tick).GetInputForPeer(peer_id, _replayPeerId);
                     }
                     input_frames_received[peer_id] = peer_input_ticks;
                 }
             }
             msg["input_frames_received"] = input_frames_received;
 
-            replay_server.SendMessage(msg);
+            _replayServer.SendMessage(msg);
         }
 
         public override void _UnhandledKeyInput(InputEventKey @event)
@@ -300,10 +323,10 @@ namespace Fractural.RollbackNetcode
                         JumpToPreviousFrame();
                         break;
                     case KeyList.Up:
-                        time_field.Value += 1;
+                        _timeSpinBox.Value += 1;
                         break;
                     case KeyList.Down:
-                        time_field.Value -= 1;
+                        _timeSpinBox.Value -= 1;
                         break;
                 }
             }
@@ -311,22 +334,22 @@ namespace Fractural.RollbackNetcode
 
         public void _OnStartButtonPressed()
         {
-            time_field.Value = 0;
+            _timeSpinBox.Value = 0;
         }
 
         public void _OnEndButtonPressed()
         {
-            time_field.Value = time_field.MaxValue;
+            _timeSpinBox.Value = _timeSpinBox.MaxValue;
         }
 
         public void _OnDataGraphCursorTimeChanged(float cursor_time)
         {
-            time_field.Value = cursor_time;
+            _timeSpinBox.Value = cursor_time;
         }
 
         public void _OnSettingsButtonPressed()
         {
-            settings_dialog.PopupCentered();
+            _settingsDialog.PopupCentered();
         }
 
         public void _OnReplayToCurrentButtonPressed()
@@ -336,7 +359,7 @@ namespace Fractural.RollbackNetcode
 
         public void _OnAutoReplayToCurrentFieldToggled(bool button_pressed)
         {
-            replay_to_current_button.Disabled = button_pressed;
+            _replayToCurrentButton.Disabled = button_pressed;
             if (button_pressed)
                 ReplayToCurrentFrame();
         }

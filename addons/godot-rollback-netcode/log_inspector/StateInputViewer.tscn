@@ -1,15 +1,12 @@
 [gd_scene load_steps=2 format=2]
 
-[ext_resource path="res://addons/godot-rollback-netcode/log_inspector/StateInputViewer.gd" type="Script" id=1]
+[ext_resource path="res://addons/godot-rollback-netcode/log_inspector/StateInputViewer.cs" type="Script" id=1]
 
 [node name="StateInputViewer" type="VBoxContainer"]
 anchor_right = 1.0
 anchor_bottom = 1.0
 size_flags_vertical = 3
 script = ExtResource( 1 )
-__meta__ = {
-"_edit_use_anchors_": false
-}
 
 [node name="HBoxContainer" type="HBoxContainer" parent="."]
 margin_right = 1024.0
@@ -62,22 +59,22 @@ custom_constants/hseparation = 5
 columns = 2
 
 [node name="InputLabel" type="Label" parent="GridContainer"]
-margin_right = 509.0
+margin_right = 510.0
 margin_bottom = 14.0
 size_flags_horizontal = 3
 text = "Input:"
 
 [node name="InputMismatchesLabel" type="Label" parent="GridContainer"]
-margin_left = 514.0
-margin_right = 1023.0
+margin_left = 515.0
+margin_right = 1024.0
 margin_bottom = 14.0
 size_flags_horizontal = 3
 text = "Input Mismatches:"
 
 [node name="InputPanel" type="Panel" parent="GridContainer"]
 margin_top = 19.0
-margin_right = 509.0
-margin_bottom = 283.0
+margin_right = 510.0
+margin_bottom = 284.0
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
@@ -89,10 +86,10 @@ hide_root = true
 select_mode = 1
 
 [node name="InputMismatchesPanel" type="Panel" parent="GridContainer"]
-margin_left = 514.0
+margin_left = 515.0
 margin_top = 19.0
-margin_right = 1023.0
-margin_bottom = 283.0
+margin_right = 1024.0
+margin_bottom = 284.0
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
@@ -100,28 +97,29 @@ size_flags_vertical = 3
 anchor_right = 1.0
 anchor_bottom = 1.0
 columns = 3
+column_titles_visible = true
 hide_root = true
 select_mode = 1
 
 [node name="StateLabel" type="Label" parent="GridContainer"]
-margin_top = 288.0
-margin_right = 509.0
-margin_bottom = 302.0
+margin_top = 289.0
+margin_right = 510.0
+margin_bottom = 303.0
 size_flags_horizontal = 3
 text = "State:"
 
 [node name="StateMismatchesLabel" type="Label" parent="GridContainer"]
-margin_left = 514.0
-margin_top = 288.0
-margin_right = 1023.0
-margin_bottom = 302.0
+margin_left = 515.0
+margin_top = 289.0
+margin_right = 1024.0
+margin_bottom = 303.0
 size_flags_horizontal = 3
 text = "State Mismatches:"
 
 [node name="StatePanel" type="Panel" parent="GridContainer"]
-margin_top = 307.0
-margin_right = 509.0
-margin_bottom = 571.0
+margin_top = 308.0
+margin_right = 510.0
+margin_bottom = 572.0
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
@@ -133,10 +131,10 @@ hide_root = true
 select_mode = 1
 
 [node name="StateMismatchesPanel" type="Panel" parent="GridContainer"]
-margin_left = 514.0
-margin_top = 307.0
-margin_right = 1023.0
-margin_bottom = 571.0
+margin_left = 515.0
+margin_top = 308.0
+margin_right = 1024.0
+margin_bottom = 572.0
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
@@ -144,11 +142,6 @@ size_flags_vertical = 3
 anchor_right = 1.0
 anchor_bottom = 1.0
 columns = 3
+column_titles_visible = true
 hide_root = true
 select_mode = 1
-
-[connection signal="value_changed" from="HBoxContainer/TickNumber" to="." method="_on_TickNumber_value_changed"]
-[connection signal="pressed" from="HBoxContainer/StartButton" to="." method="_on_StartButton_pressed"]
-[connection signal="pressed" from="HBoxContainer/PreviousMismatchButton" to="." method="_on_PreviousMismatchButton_pressed"]
-[connection signal="pressed" from="HBoxContainer/NextMismatchButton" to="." method="_on_NextMismatchButton_pressed"]
-[connection signal="pressed" from="HBoxContainer/EndButton" to="." method="_on_EndButton_pressed"]

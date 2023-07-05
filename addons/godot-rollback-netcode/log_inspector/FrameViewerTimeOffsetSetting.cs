@@ -13,27 +13,33 @@ namespace Fractural.RollbackNetcode
         public event TimeOffsetChangedDelegate TimeOffsetChanged;
 
         [OnReadyGet("PeerLabel")]
-        public Label peer_label;
+        private Label _peerLabel;
         [OnReadyGet("OffsetValue")]
-        public SpinBox offset_value_field;
+        private SpinBox _offsetValueSpinBox;
 
         private int _peerId;
 
-        public void SetupTimeOffsetSetting(int peerId, string _label, int _value)
+        [OnReady]
+        public void RealReady()
+        {
+            _offsetValueSpinBox.Connect("value_cahnged", this, nameof(_OnOffsetValueValueChanged));
+        }
+
+        public void Construct(int peerId, string _label, int _value)
         {
             _peerId = peerId;
-            peer_label.Text = _label;
-            offset_value_field.Value = _value;
+            _peerLabel.Text = _label;
+            _offsetValueSpinBox.Value = _value;
         }
 
         public int GetTimeOffset()
         {
-            return (int)offset_value_field.Value;
+            return (int)_offsetValueSpinBox.Value;
         }
 
         public void _OnOffsetValueValueChanged(float value)
         {
-            TimeOffsetChanged?.Invoke((int)offset_value_field.Value, _peerId);
+            TimeOffsetChanged?.Invoke((int)_offsetValueSpinBox.Value, _peerId);
         }
     }
 }

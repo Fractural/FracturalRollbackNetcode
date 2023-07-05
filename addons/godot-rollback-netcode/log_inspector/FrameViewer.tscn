@@ -1,6 +1,6 @@
 [gd_scene load_steps=5 format=2]
 
-[ext_resource path="res://addons/godot-rollback-netcode/log_inspector/FrameViewer.gd" type="Script" id=1]
+[ext_resource path="res://addons/godot-rollback-netcode/log_inspector/FrameViewer.cs" type="Script" id=1]
 [ext_resource path="res://addons/godot-rollback-netcode/log_inspector/FrameDataGraph.tscn" type="PackedScene" id=2]
 [ext_resource path="res://addons/godot-rollback-netcode/log_inspector/FrameViewerSettingsDialog.tscn" type="PackedScene" id=3]
 [ext_resource path="res://addons/godot-rollback-netcode/log_inspector/FrameDataGrid.tscn" type="PackedScene" id=4]
@@ -147,13 +147,3 @@ margin_bottom = 558.0
 size_flags_vertical = 3
 
 [node name="SettingsDialog" parent="." instance=ExtResource( 3 )]
-
-[connection signal="value_changed" from="VBoxContainer/HBoxContainer/Time" to="." method="_on_Time_value_changed"]
-[connection signal="pressed" from="VBoxContainer/HBoxContainer/StartButton" to="." method="_on_StartButton_pressed"]
-[connection signal="pressed" from="VBoxContainer/HBoxContainer/PreviousFrameButton" to="." method="_on_PreviousFrameButton_pressed"]
-[connection signal="pressed" from="VBoxContainer/HBoxContainer/NextFrameButton" to="." method="_on_NextFrameButton_pressed"]
-[connection signal="pressed" from="VBoxContainer/HBoxContainer/EndButton" to="." method="_on_EndButton_pressed"]
-[connection signal="pressed" from="VBoxContainer/HBoxContainer/ReplayContainer/HBoxContainer/ReplayToCurrentButton" to="." method="_on_ReplayToCurrentButton_pressed"]
-[connection signal="toggled" from="VBoxContainer/HBoxContainer/ReplayContainer/HBoxContainer/AutoReplayToCurrentField" to="." method="_on_AutoReplayToCurrentField_toggled"]
-[connection signal="pressed" from="VBoxContainer/HBoxContainer/SettingsButton" to="." method="_on_SettingsButton_pressed"]
-[connection signal="cursor_time_changed" from="VBoxContainer/VSplitContainer/DataGraph" to="." method="_on_DataGraph_cursor_time_changed"]

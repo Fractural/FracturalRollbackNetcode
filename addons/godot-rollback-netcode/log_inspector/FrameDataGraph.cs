@@ -34,10 +34,16 @@ namespace Fractural.RollbackNetcode
         public delegate void CursorTimeChangedDelegate(int cursor_time);
         public event CursorTimeChangedDelegate CursorTimeChanged;
 
-        public void SetLogData(LogData _log_data)
+        [OnReady]
+        public void RealReady()
+        {
+            scroll_bar.Connect("value_changed", this, nameof(_OnScrollBarValueChanged));
+        }
+
+        public void Construct(LogData _log_data)
         {
             log_data = _log_data;
-            canvas.SetLogData(log_data);
+            canvas.Construct(log_data);
         }
 
         public void RefreshFromLogData()
@@ -53,11 +59,13 @@ namespace Fractural.RollbackNetcode
             canvas.start_time = (int)value;
         }
 
+        // TODO: Remove if never called
         public void _OnCanvasCursorTimeChanged(int _cursor_time)
         {
             cursor_time = _cursor_time;
         }
 
+        // TODO: Remove if never called
         public void _OnCanvasStartTimeChanged(int start_time)
         {
             scroll_bar.Value = start_time;

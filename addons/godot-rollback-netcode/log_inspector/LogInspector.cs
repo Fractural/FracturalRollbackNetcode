@@ -11,59 +11,79 @@ namespace Fractural.RollbackNetcode
     public partial class LogInspector : WindowDialog
     {
         [OnReadyGet("FileDialog")]
-        public FileDialog file_dialog;
+        private FileDialog _fileDialog;
         [OnReadyGet("ProgressDialog")]
-        public ProgressDialog progress_dialog;
+        private ProgressDialog _progressDialog;
         [OnReadyGet("MarginContainer/VBoxContainer/LoadToolbar/DataDescriptionLabel")]
-        public Label data_description_label;
-        public string data_description_label_default_text;
+        private Label _dataDescriptionLabel;
+        private string _dataDescriptionLabelDefaultText;
+        [OnReadyGet("MarginContainer/VBoxContainer/LoadToolbar/ClearButton")]
+        private Button _clearButton;
+        [OnReadyGet("MarginContainer/VBoxContainer/LoadToolbar/AddLogButton")]
+        private Button _addLogButton;
         [OnReadyGet("MarginContainer/VBoxContainer/LoadToolbar/ModeButton")]
-        public OptionButton mode_button;
+        private OptionButton _modeButton;
         [OnReadyGet("MarginContainer/VBoxContainer/StateInputViewer")]
-        public StateInputViewer state_input_viewer;
+        private StateInputViewer _stateInputViewer;
         [OnReadyGet("MarginContainer/VBoxContainer/FrameViewer")]
-        public FrameViewer frame_viewer;
+        private FrameViewer _frameViewer;
         [OnReadyGet("ReplayServer")]
-        public ReplayServer replay_server;
+        private ReplayServer _replayServer;
         [OnReadyGet("MarginContainer/VBoxContainer/ReplayToolbar/ServerContainer/HBoxContainer/ReplayStatusLabel")]
-        public Label replay_server_status_label;
+        private Label _replayServerStatusLabel;
         [OnReadyGet("MarginContainer/VBoxContainer/ReplayToolbar/ServerContainer/HBoxContainer/StartServerButton")]
-        public Button start_server_button;
+        private Button _startServerButton;
         [OnReadyGet("MarginContainer/VBoxContainer/ReplayToolbar/ServerContainer/HBoxContainer/StopServerButton")]
-        public Button stop_server_button;
+        private Button _stopServerButton;
         [OnReadyGet("MarginContainer/VBoxContainer/ReplayToolbar/ServerContainer/HBoxContainer/DisconnectButton")]
-        public Button disconnect_button;
+        private Button _disconnectButton;
         [OnReadyGet("MarginContainer/VBoxContainer/ReplayToolbar/ClientContainer/HBoxContainer/LaunchGameButton")]
-        public Button launch_game_button;
+        private Button _launchGameButton;
         [OnReadyGet("MarginContainer/VBoxContainer/ReplayToolbar/ClientContainer/HBoxContainer/ShowPeerField")]
-        public OptionButton show_peer_field;
+        private OptionButton _showPeerOptionButton;
 
-        enum DataMode
+        private enum DataMode
         {
             STATE_INPUT,
             FRAME,
         }
 
-        public LogData log_data = new LogData();
+        private LogData _logData = new LogData();
         // filePaths: string[]
-        public GDC.Array _files_to_load = new GDC.Array() { };
+        private GDC.Array _files_to_load = new GDC.Array() { };
 
         [OnReady]
         public void RealReady()
         {
-            data_description_label_default_text = data_description_label.Text;
-            state_input_viewer.SetLogData(log_data);
-            frame_viewer.SetLogData(log_data);
+            Connect("about_to_show", this, nameof(_OnLogInspectorAboutToShow));
+            _fileDialog.Connect("files_selected", this, nameof(_OnFileDialogFilesSelected));
+            _clearButton.Connect("pressed", this, nameof(_OnClearButtonPressed));
+            _addLogButton.Connect("pressed", this, nameof(_OnAddLogButtonPressed));
+            _modeButton.Connect("item_selected", this, nameof(_OnModeButtonItemSelected));
+            _startServerButton.Connect("pressed", this, nameof(_OnStartServerButtonPressed));
+            _stopServerButton.Connect("pressed", this, nameof(_OnStopServerButtonPressed));
+            _disconnectButton.Connect("pressed", this, nameof(_OnDisconnectButtonPressed));
+            _launchGameButton.Connect("pressed", this, nameof(_OnLaunchGameButtonPressed));
+            _showPeerOptionButton.Connect("item_selected", this, nameof(_OnShowPeerFieldItemSelected));
 
-            log_data.LoadError += _OnLogDataLoadError;
-            log_data.LoadProgress += _OnLogDataLoadProgress;
-            log_data.LoadFinished += _OnLogDataLoadFinished;
-            log_data.DataUpdated += RefreshFromLogData;
+            _replayServer.GameConnected += _OnReplayServerGameConnected;
+            _replayServer.GameDisconnected += _OnReplayServerGameDisconnected;
+            _replayServer.StartedListening += _OnReplayServerStartedListening;
+            _replayServer.StoppedListening += _OnReplayServerStoppedListening;
 
-            state_input_viewer.SetReplayServer(replay_server);
-            frame_viewer.SetReplayServer(replay_server);
+            _dataDescriptionLabelDefaultText = _dataDescriptionLabel.Text;
+            _stateInputViewer.Construct(_logData);
+            _frameViewer.Construct(_logData);
 
-            file_dialog.CurrentDir = OS.GetUserDataDir() + "/detailed_logs/";
+            _logData.LoadError += _OnLogDataLoadError;
+            _logData.LoadProgress += _OnLogDataLoadProgress;
+            _logData.LoadFinished += _OnLogDataLoadFinished;
+            _logData.DataUpdated += RefreshFromLogData;
+
+            _stateInputViewer.SetReplayServer(_replayServer);
+            _frameViewer.SetReplayServer(_replayServer);
+
+            _fileDialog.CurrentDir = OS.GetUserDataDir() + "/detailed_logs/";
 
             // Show && make full screen if the scene is being run on its own.
             if (GetParent() == GetTree().Root)
@@ -81,10 +101,15 @@ namespace Fractural.RollbackNetcode
         {
             if (what == NotificationPredelete)
             {
-                log_data.LoadError -= _OnLogDataLoadError;
-                log_data.LoadProgress -= _OnLogDataLoadProgress;
-                log_data.LoadFinished -= _OnLogDataLoadFinished;
-                log_data.DataUpdated -= RefreshFromLogData;
+                _replayServer.GameConnected -= _OnReplayServerGameConnected;
+                _replayServer.GameDisconnected -= _OnReplayServerGameDisconnected;
+                _replayServer.StartedListening -= _OnReplayServerStartedListening;
+                _replayServer.StoppedListening -= _OnReplayServerStoppedListening;
+
+                _logData.LoadError -= _OnLogDataLoadError;
+                _logData.LoadProgress -= _OnLogDataLoadProgress;
+                _logData.LoadFinished -= _OnLogDataLoadFinished;
+                _logData.DataUpdated -= RefreshFromLogData;
             }
         }
 
@@ -96,38 +121,38 @@ namespace Fractural.RollbackNetcode
         public void StartLogInspector()
         {
             UpdateReplayServerStatus();
-            replay_server.StartListening();
+            _replayServer.StartListening();
 
         }
 
-        public void SetEditorInterface(EditorInterface editor_interface)
+        public void Construct(EditorInterface editor_interface)
         {
-            replay_server.SetEditorInterface(editor_interface);
+            _replayServer.Construct(editor_interface);
         }
 
         public void _OnClearButtonPressed()
         {
-            if (log_data.IsLoading())
+            if (_logData.IsLoading())
                 return;
-            log_data.Clear();
-            data_description_label.Text = data_description_label_default_text;
-            state_input_viewer.Clear();
-            frame_viewer.Clear();
+            _logData.Clear();
+            _dataDescriptionLabel.Text = _dataDescriptionLabelDefaultText;
+            _stateInputViewer.Clear();
+            _frameViewer.Clear();
         }
 
         public void _OnAddLogButtonPressed()
         {
-            file_dialog.CurrentFile = "";
-            file_dialog.CurrentPath = "";
-            file_dialog.ShowModal();
-            file_dialog.Invalidate();
+            _fileDialog.CurrentFile = "";
+            _fileDialog.CurrentPath = "";
+            _fileDialog.ShowModal();
+            _fileDialog.Invalidate();
         }
 
         public void _OnFileDialogFilesSelected(string[] paths)
         {
             if (paths.Length > 0)
             {
-                bool already_loading = (_files_to_load.Count > 0) || log_data.IsLoading();
+                bool already_loading = (_files_to_load.Count > 0) || _logData.IsLoading();
                 foreach (var path in paths)
                     _files_to_load.Add(path);
 
@@ -135,42 +160,41 @@ namespace Fractural.RollbackNetcode
                 {
                     var first_file = _files_to_load.PopFrontList<string>();
                     UpdateProgressDialogLabel(first_file.GetFile());
-                    progress_dialog.PopupCentered();
-                    log_data.LoadLogFile(first_file);
+                    _progressDialog.PopupCentered();
+                    _logData.LoadLogFile(first_file);
                 }
             }
         }
 
         public void RefreshFromLogData()
         {
-            if (log_data.IsLoading())
+            if (_logData.IsLoading())
                 return;
 
-            data_description_label.Text = $"{log_data.peer_ids.Count} Logs (peer ids: {log_data.peer_ids}) && {log_data.max_tick} ticks";
+            _dataDescriptionLabel.Text = $"{_logData.peer_ids.Count} Logs (peer ids: {_logData.peer_ids}) && {_logData.max_tick} ticks";
 
-            if (log_data.mismatches.Count > 0)
-                data_description_label.Text += $" with {log_data.mismatches.Count} mismatches";
+            if (_logData.mismatches.Count > 0)
+                _dataDescriptionLabel.Text += $" with {_logData.mismatches.Count} mismatches";
 
-            show_peer_field.Clear();
-            foreach (int peer_id in log_data.peer_ids)
-                show_peer_field.AddItem($"Peer {peer_id}", peer_id);
+            _showPeerOptionButton.Clear();
+            foreach (int peer_id in _logData.peer_ids)
+                _showPeerOptionButton.AddItem($"Peer {peer_id}", peer_id);
 
             RefreshReplay();
-            state_input_viewer.RefreshFromLogData();
-            frame_viewer.RefreshFromLogData();
-
+            _stateInputViewer.RefreshFromLogData();
+            _frameViewer.RefreshFromLogData();
         }
 
         public void _OnLogDataLoadError(string msg)
         {
-            progress_dialog.Hide();
+            _progressDialog.Hide();
             _files_to_load.Clear();
             OS.Alert(msg);
         }
 
         public void _OnLogDataLoadProgress(ulong current, ulong total)
         {
-            progress_dialog.UpdateProgress(current, total);
+            _progressDialog.UpdateProgress(current, total);
         }
 
         public void _OnLogDataLoadFinished()
@@ -179,24 +203,24 @@ namespace Fractural.RollbackNetcode
             {
                 var next_file = _files_to_load.PopFrontList<string>();
                 UpdateProgressDialogLabel(next_file.GetFile());
-                log_data.LoadLogFile(next_file);
+                _logData.LoadLogFile(next_file);
             }
             else
-                progress_dialog.Hide();
+                _progressDialog.Hide();
         }
 
         public void _OnModeButtonItemSelected(int index)
         {
-            state_input_viewer.Visible = false;
-            frame_viewer.Visible = false;
+            _stateInputViewer.Visible = false;
+            _frameViewer.Visible = false;
 
             switch ((DataMode)index)
             {
                 case DataMode.STATE_INPUT:
-                    state_input_viewer.Visible = true;
+                    _stateInputViewer.Visible = true;
                     break;
                 case DataMode.FRAME:
-                    frame_viewer.Visible = true;
+                    _frameViewer.Visible = true;
                     break;
             }
             RefreshReplay();
@@ -204,41 +228,41 @@ namespace Fractural.RollbackNetcode
 
         public void _OnStartServerButtonPressed()
         {
-            replay_server.StartListening();
+            _replayServer.StartListening();
         }
 
         public void _OnStopServerButtonPressed()
         {
-            if (replay_server.IsConnectedToGame())
-                replay_server.DisconnectFromGame(false);
+            if (_replayServer.IsConnectedToGame())
+                _replayServer.DisconnectFromGame(false);
             else
-                replay_server.StopListening();
+                _replayServer.StopListening();
         }
 
         public void UpdateReplayServerStatus()
         {
-            switch (replay_server.GetStatus())
+            switch (_replayServer.GetStatus())
             {
                 case ReplayServer.Status.NONE:
-                    replay_server_status_label.Text = "Disabled.";
-                    start_server_button.Disabled = false;
-                    stop_server_button.Disabled = true;
-                    disconnect_button.Disabled = true;
-                    launch_game_button.Disabled = true;
+                    _replayServerStatusLabel.Text = "Disabled.";
+                    _startServerButton.Disabled = false;
+                    _stopServerButton.Disabled = true;
+                    _disconnectButton.Disabled = true;
+                    _launchGameButton.Disabled = true;
                     break;
                 case ReplayServer.Status.LISTENING:
-                    replay_server_status_label.Text = "Listening for connections...";
-                    start_server_button.Disabled = true;
-                    stop_server_button.Disabled = false;
-                    disconnect_button.Disabled = true;
-                    launch_game_button.Disabled = false;
+                    _replayServerStatusLabel.Text = "Listening for connections...";
+                    _startServerButton.Disabled = true;
+                    _stopServerButton.Disabled = false;
+                    _disconnectButton.Disabled = true;
+                    _launchGameButton.Disabled = false;
                     break;
                 case ReplayServer.Status.CONNECTED:
-                    replay_server_status_label.Text = "Connected to game.";
-                    start_server_button.Disabled = true;
-                    stop_server_button.Disabled = false;
-                    disconnect_button.Disabled = false;
-                    launch_game_button.Disabled = true;
+                    _replayServerStatusLabel.Text = "Connected to game.";
+                    _startServerButton.Disabled = true;
+                    _stopServerButton.Disabled = false;
+                    _disconnectButton.Disabled = false;
+                    _launchGameButton.Disabled = true;
 
                     break;
             }
@@ -246,22 +270,22 @@ namespace Fractural.RollbackNetcode
 
         public void RefreshReplay()
         {
-            var replay_peer_id = show_peer_field.GetSelectedId();
+            var replay_peer_id = _showPeerOptionButton.GetSelectedId();
 
-            if (replay_server != null)
-                replay_server.SendMatchInfo(log_data, replay_peer_id);
+            if (_replayServer != null)
+                _replayServer.SendMatchInfo(_logData, replay_peer_id);
 
-            state_input_viewer.SetReplayPeerId(replay_peer_id);
-            frame_viewer.SetReplayPeerId(replay_peer_id);
+            _stateInputViewer.SetReplayPeerId(replay_peer_id);
+            _frameViewer.SetReplayPeerId(replay_peer_id);
 
-            var mode = mode_button.Selected;
+            var mode = _modeButton.Selected;
             switch ((DataMode)mode)
             {
                 case DataMode.STATE_INPUT:
-                    state_input_viewer.RefreshReplay();
+                    _stateInputViewer.RefreshReplay();
                     break;
                 case DataMode.FRAME:
-                    frame_viewer.RefreshReplay();
+                    _frameViewer.RefreshReplay();
                     break;
             }
         }
@@ -289,12 +313,12 @@ namespace Fractural.RollbackNetcode
 
         public void _OnLaunchGameButtonPressed()
         {
-            replay_server.LaunchGame();
+            _replayServer.LaunchGame();
         }
 
         public void _OnDisconnectButtonPressed()
         {
-            replay_server.DisconnectFromGame();
+            _replayServer.DisconnectFromGame();
         }
 
         public void _OnShowPeerFieldItemSelected(int index)
@@ -304,7 +328,7 @@ namespace Fractural.RollbackNetcode
 
         private void UpdateProgressDialogLabel(string file)
         {
-            progress_dialog.SetLabel($"Loading {file}...");
+            _progressDialog.SetLabel($"Loading {file}...");
         }
     }
 }

@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=2]
 
-[ext_resource path="res://addons/godot-rollback-netcode/log_inspector/FrameViewerSettingsDialog.gd" type="Script" id=1]
+[ext_resource path="res://addons/godot-rollback-netcode/log_inspector/FrameViewerSettingsDialog.cs" type="Script" id=1]
 
 [node name="FrameViewerSettingsDialog" type="WindowDialog"]
 anchor_left = 0.5
@@ -111,9 +111,3 @@ margin_left = 292.0
 margin_top = 132.0
 margin_right = 580.0
 margin_bottom = 146.0
-
-[connection signal="toggled" from="MarginContainer/GridContainer/ShowNetworkArrows" to="." method="_on_ShowNetworkArrows_toggled"]
-[connection signal="item_selected" from="MarginContainer/GridContainer/NetworkArrowsPeer1" to="." method="_on_NetworkArrowsPeer1_item_selected"]
-[connection signal="item_selected" from="MarginContainer/GridContainer/NetworkArrowsPeer2" to="." method="_on_NetworkArrowsPeer2_item_selected"]
-[connection signal="pressed" from="MarginContainer/GridContainer/ShowRollbackTicks" to="." method="_on_ShowRollbackTicks_pressed"]
-[connection signal="text_changed" from="MarginContainer/GridContainer/MaxRollbackTicks" to="." method="_on_MaxRollbackTicks_text_changed"]
