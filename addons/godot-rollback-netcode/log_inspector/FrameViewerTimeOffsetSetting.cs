@@ -1,37 +1,39 @@
 
 using System;
+using Fractural.GodotCodeGenerator.Attributes;
 using Godot;
 using GDC = Godot.Collections;
 
-[Tool]
-public class FrameViewerTimeOffsetSetting : HBoxContainer
+namespace Fractural.RollbackNetcode
 {
-
-    public onready var peer_label = GetNode("PeerLabel");
-    public onready var offset_value_field = GetNode("OffsetValue");
-
-    [Signal] delegate void TimeOffsetChanged(value);
-
-    public void SetupTimeOffsetSetting(string _label, int _value)
+    [Tool]
+    public partial class FrameViewerTimeOffsetSetting : HBoxContainer
     {
-        peer_label.text = _label;
-        offset_value_field.value = _value;
+        public delegate void TimeOffsetChangedDelegate(int value, int peerId);
+        public event TimeOffsetChangedDelegate TimeOffsetChanged;
 
+        [OnReadyGet("PeerLabel")]
+        public Label peer_label;
+        [OnReadyGet("OffsetValue")]
+        public SpinBox offset_value_field;
+
+        private int _peerId;
+
+        public void SetupTimeOffsetSetting(int peerId, string _label, int _value)
+        {
+            _peerId = peerId;
+            peer_label.Text = _label;
+            offset_value_field.Value = _value;
+        }
+
+        public int GetTimeOffset()
+        {
+            return (int)offset_value_field.Value;
+        }
+
+        public void _OnOffsetValueValueChanged(float value)
+        {
+            TimeOffsetChanged?.Invoke((int)offset_value_field.Value, _peerId);
+        }
     }
-
-    public int GetTimeOffset()
-    {
-        return offset_value_field.value;
-
-    }
-
-    public void _OnOffsetValueValueChanged(float value)
-    {
-        EmitSignal("time_offset_changed", (int)(offset_value_field.value));
-
-
-    }
-
-
-
 }

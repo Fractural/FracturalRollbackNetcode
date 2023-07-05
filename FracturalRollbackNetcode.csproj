@@ -4,6 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="FracturalGodotCodeGenerator" Version="1.0.0" />
+    <PackageReference Include="NakamaClient" Version="3.8.0" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="addons\FracturalRollbackNetcode\" />

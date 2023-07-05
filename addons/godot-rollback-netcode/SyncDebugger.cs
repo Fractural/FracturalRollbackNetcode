@@ -31,14 +31,13 @@ namespace Fractural.RollbackNetcode
             Global = this;
             _syncManager = SyncManager.Global;
 
-            _syncManager.Connect("rollback_flagged", this, "_on_SyncManager_rollback_flagged");
-            _syncManager.Connect("prediction_missed", this, "_on_SyncManager_prediction_missed");
-            _syncManager.Connect("skip_ticks_flagged", this, "_on_SyncManager_skip_ticks_flagged");
-            _syncManager.Connect("remote_state_mismatch", this, "_on_SyncManager_remote_state_mismatch");
-            _syncManager.Connect("peer_pinged_back", this, "_on_SyncManager_peer_pinged_back");
-            _syncManager.Connect("state_loaded", this, "_on_SyncManager_state_loaded");
-            _syncManager.Connect("tick_finished", this, "_on_SyncManager_tick_finished");
-
+            _syncManager.RollbackFlagged += _OnSyncManagerRollbackFlagged;
+            _syncManager.PredictionMissed += _OnSyncManagerPredictionMissed;
+            _syncManager.SkipTicksFlagged += _OnSyncManagerSkipTicksFlagged;
+            _syncManager.RemoteStateMismatch += _OnSyncManagerRemoteStateMismatch;
+            _syncManager.PeerPingedBack += _OnSyncManagerPeerPingedBack;
+            _syncManager.StateLoaded += _OnSyncManagerStateLoaded;
+            _syncManager.TickFinished += _OnSyncManagerTickFinished;
         }
 
         public override void _Notification(int what)
@@ -47,6 +46,13 @@ namespace Fractural.RollbackNetcode
             {
                 if (Global == this)
                     Global = null;
+                _syncManager.RollbackFlagged -= _OnSyncManagerRollbackFlagged;
+                _syncManager.PredictionMissed -= _OnSyncManagerPredictionMissed;
+                _syncManager.SkipTicksFlagged -= _OnSyncManagerSkipTicksFlagged;
+                _syncManager.RemoteStateMismatch -= _OnSyncManagerRemoteStateMismatch;
+                _syncManager.PeerPingedBack -= _OnSyncManagerPeerPingedBack;
+                _syncManager.StateLoaded -= _OnSyncManagerStateLoaded;
+                _syncManager.TickFinished -= _OnSyncManagerTickFinished;
             }
         }
 

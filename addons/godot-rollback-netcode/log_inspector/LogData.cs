@@ -16,7 +16,7 @@ namespace Fractural.RollbackNetcode
             public int tick;
             public GDC.Dictionary state;
             public int state_hash;
-            public GDC.Dictionary mismatches = new GDC.Dictionary() { };
+            public IDictionary<int, GDC.Dictionary> mismatches = new Dictionary<int, GDC.Dictionary>() { };
 
             public StateData(int _tick, GDC.Dictionary _state)
             {
@@ -118,11 +118,12 @@ namespace Fractural.RollbackNetcode
 
         // User-set data
         public GDC.Dictionary match_info = new GDC.Dictionary() { };
-        // User-set data
+        // [tick: int]: data: InputData
         public GDC.Dictionary input = new GDC.Dictionary() { };
         // Combination of all GDC.Dictionary data from all serializable nodes
+        // [node: NodePath]: nodeState: GDC.Dictionary
         public GDC.Dictionary state = new GDC.Dictionary() { };
-        // [peer_id: int] data_array: FrameData[]
+        // [peer_id: int] data_array: GDC.Array<FrameData>
         public GDC.Dictionary frames = new GDC.Dictionary() { };
 
         // [peer_id: int]: offset: int

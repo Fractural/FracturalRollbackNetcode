@@ -1,36 +1,38 @@
 
 using System;
+using Fractural.GodotCodeGenerator.Attributes;
 using Godot;
 using GDC = Godot.Collections;
 
-
-public class PeerStatus : Control
+namespace Fractural.RollbackNetcode
 {
-
-    public onready var peer_id_field = GetNode("VBoxContainer/GridContainer/PeerIdValue");
-    public onready var rtt_field = GetNode("VBoxContainer/GridContainer/RTTValue");
-    public onready var local_lag_field = GetNode("VBoxContainer/GridContainer/LocalLagValue");
-    public onready var remote_lag_field = GetNode("VBoxContainer/GridContainer/RemoteLagValue");
-    public onready var advantage_field = GetNode("VBoxContainer/GridContainer/AdvantageValue");
-    public onready var messages_field = GetNode("VBoxContainer/MessagesValue");
-
-    public void UpdatePeer(SyncManager.Peer peer)
+    public partial class PeerStatus : Control
     {
-        peer_id_field.text = GD.Str(peer.peer_id);
-        rtt_field.text = GD.Str(peer.rtt) + " ms";
-        local_lag_field.text = GD.Str(peer.local_lag);
-        remote_lag_field.text = GD.Str(peer.remote_lag);
-        advantage_field.text = GD.Str(peer.calculated_advantage);
+        [OnReadyGet("VBoxContainer/GridContainer/PeerIdValue")]
+        public Label peer_id_field;
+        [OnReadyGet("VBoxContainer/GridContainer/RTTValue")]
+        public Label rtt_field;
+        [OnReadyGet("VBoxContainer/GridContainer/LocalLagValue")]
+        public Label local_lag_field;
+        [OnReadyGet("VBoxContainer/GridContainer/RemoteLagValue")]
+        public Label remote_lag_field;
+        [OnReadyGet("VBoxContainer/GridContainer/AdvantageValue")]
+        public Label advantage_field;
+        [OnReadyGet("VBoxContainer/MessagesValue")]
+        public Label messages_field;
 
+        public void UpdatePeer(SyncManager.Peer peer)
+        {
+            peer_id_field.Text = peer.peer_id.ToString();
+            rtt_field.Text = peer.rtt.ToString() + " ms";
+            local_lag_field.Text = peer.local_lag.ToString();
+            remote_lag_field.Text = peer.remote_lag.ToString();
+            advantage_field.Text = peer.calculated_advantage.ToString();
+        }
+
+        public void AddMessage(string msg)
+        {
+            messages_field.Text += "* " + msg + "\n";
+        }
     }
-
-    public void AddMessage(string msg)
-    {
-        messages_field.text += "* " + msg + "\n";
-
-
-    }
-
-
-
 }

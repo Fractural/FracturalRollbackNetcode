@@ -194,7 +194,7 @@ namespace Fractural.RollbackNetcode
 
         private void _DoLoadState(GDC.Dictionary state)
         {
-            state = _syncManager.hash_serializer.Unserialize(state);
+            state = _syncManager.hash_serializer.Unserialize(state) as GDC.Dictionary;
             _syncManager._CallLoadState(state);
         }
 
@@ -204,7 +204,7 @@ namespace Fractural.RollbackNetcode
             GDC.Dictionary input_frames_received = msg.Get("input_frames_received", new GDC.Dictionary() { });
             int rollback_ticks = msg.Get("rollback_ticks", 0);
 
-            input_frames_received = _syncManager.hash_serializer.Unserialize(input_frames_received);
+            input_frames_received = _syncManager.hash_serializer.Unserialize(input_frames_received) as GDC.Dictionary;
             _syncManager.mechanized_input_received = input_frames_received;
             _syncManager.mechanized_rollback_ticks = rollback_ticks;
 
@@ -214,7 +214,7 @@ namespace Fractural.RollbackNetcode
                     _syncManager.ExecuteMechanizedTick();
                     break;
                 case Logger.FrameType.INTERPOLATION_FRAME:
-                    _syncManager.ExecuteMechanizedInterpolationFrame(msg["delta"]);
+                    _syncManager.ExecuteMechanizedInterpolationFrame(msg.Get<float>("delta"));
                     break;
                 case Logger.FrameType.INTERFRAME:
                     _syncManager.ExecuteMechanizedInterframe();

@@ -22,12 +22,20 @@ namespace Fractural.RollbackNetcode
                 default_bus = ProjectSettingsUtils.GetSetting<string>(DEFAULT_SOUND_BUS_SETTING);
         }
 
+        public override void _Notification(int what)
+        {
+            if (what == NotificationPredelete && _syncManager != null)
+            {
+                _syncManager.TickRetired -= _OnSyncManagerTickRetired;
+                _syncManager.SyncStopped -= _OnSyncManagerSyncStopped;
+            }
+        }
+
         public void SetupSoundManager(SyncManager _sync_manager)
         {
             _syncManager = _sync_manager;
-            _syncManager.Connect("tick_retired", this, "_on_SyncManager_tick_retired");
-            _syncManager.Connect("sync_stopped", this, "_on_SyncManager_sync_stopped");
-
+            _syncManager.TickRetired += _OnSyncManagerTickRetired;
+            _syncManager.SyncStopped += _OnSyncManagerSyncStopped;
         }
 
         public void PlaySound(string identifier, AudioStream sound, GDC.Dictionary info = null)

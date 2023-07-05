@@ -1,29 +1,28 @@
 
 using System;
+using Fractural.GodotCodeGenerator.Attributes;
 using Godot;
 using GDC = Godot.Collections;
 
-[Tool]
-public class ProgressDialog : PopupDialog
+namespace Fractural.RollbackNetcode
 {
-
-    public onready var label = GetNode("MarginContainer/VBoxContainer/Label");
-    public onready var progress_bar = GetNode("MarginContainer/VBoxContainer/ProgressBar");
-
-    public void SetLabel(string text)
+    [Tool]
+    public partial class ProgressDialog : PopupDialog
     {
-        label.text = text;
+        [OnReadyGet("MarginContainer/VBoxContainer/Label")]
+        public Label label;
+        [OnReadyGet("MarginContainer/VBoxContainer/ProgressBar")]
+        public ProgressBar progress_bar;
 
+        public void SetLabel(string text)
+        {
+            label.Text = text;
+        }
+
+        public void UpdateProgress(ulong value, ulong max_value)
+        {
+            progress_bar.MaxValue = max_value;
+            progress_bar.Value = value;
+        }
     }
-
-    public void UpdateProgress(__TYPE value, __TYPE max_value)
-    {
-        progress_bar.max_value = max_value;
-        progress_bar.value = value;
-
-
-    }
-
-
-
 }

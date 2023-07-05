@@ -487,7 +487,6 @@ namespace Fractural.RollbackNetcode
             _network_adaptor.ReceivedRemoteStop += _OnReceivedRemoteStop;
             _network_adaptor.ReceivedInputTick += _OnReceivedInputTick;
             _network_adaptor.AttachNetworkAdaptor(this);
-
         }
 
         public void ResetNetworkAdaptor()
@@ -1002,7 +1001,7 @@ namespace Fractural.RollbackNetcode
             // Debug check that states computed multiple times with complete inputs are the same
             if (debug_check_local_state_consistency && _last_state_hashed_tick >= current_tick)
                 _DebugCheckConsistentLocalState(state_buffer[-1], "Recomputed");
-            EmitSignal("tick_finished", is_rollback);
+            TickFinished?.Invoke(is_rollback);
             return true;
         }
 
@@ -1338,7 +1337,7 @@ namespace Fractural.RollbackNetcode
                     _logger.IncrementValue($"messages_sent_to_peer_{peer_id}_total_size", bytes.Length);
                     _logger.MergeArrayValue($"input_ticks_sent_to_peer_{peer_id}", new GDC.Array(input.Keys));
 
-                    //var ticks = msg[InputMessageKey.INPUT].Keys();
+                    //var ticks = msg[InputMessageKey.INPUT].Keys;
                     //print (\"[%s] Sending ticks %s - %s\" % [current_tick, Mathf.Min(ticks[0], ticks[-1]), Mathf.Max(ticks[0], ticks[-1])])
                 }
                 network_adaptor.SendInputTick(peer_id, bytes);
@@ -1501,7 +1500,7 @@ namespace Fractural.RollbackNetcode
                     }
                     // If we've reach this point, that means we've regained sync!
                     _ticks_spent_regaining_sync = 0;
-                    EmitSignal("sync_regained");
+                    SyncRegained?.Invoke();
 
                     // We don't want to skip ticks through the normal mechanism, because
                     // any skips that were previously calculated don't apply anymore.
@@ -1807,8 +1806,8 @@ namespace Fractural.RollbackNetcode
                         if (local_input["GetNode("] != remote_input[")$"])
                         {
                             rollback_ticks = tick_delta + 1;
-                            EmitSignal("prediction_missed", remote_tick, peer_id, local_input, remote_input);
-                            EmitSignal("rollback_flagged", remote_tick);
+                            PredictionMissed?.Invoke(remote_tick, peer_id, local_input, remote_input);
+                            RollbackFlagged?.Invoke(remote_tick);
                         }
                     }
                     else

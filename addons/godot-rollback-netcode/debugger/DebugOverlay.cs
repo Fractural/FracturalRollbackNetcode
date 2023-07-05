@@ -7,11 +7,19 @@ namespace Fractural.RollbackNetcode
 {
     public class DebugOverlay : HBoxContainer
     {
-        public PackedScene PeerStatusPrefab = GD.Load<PackedScene>("res://addons/godot-rollback-netcode/debugger/PeerStatus.tscn");
+        public readonly PackedScene PeerStatusPrefab = GD.Load<PackedScene>("res://addons/godot-rollback-netcode/debugger/PeerStatus.tscn");
 
-        public void _Ready()
+        public override void _Ready()
         {
-            SyncManager.Global.Connect("peer_removed", this, "_on_SyncManager_peer_removed");
+            SyncManager.Global.PeerRemoved += _OnSyncManagerPeerRemoved;
+        }
+
+        public override void _Notification(int what)
+        {
+            if (what == NotificationPredelete)
+            {
+                SyncManager.Global.PeerRemoved -= _OnSyncManagerPeerRemoved;
+            }
         }
 
         public void _OnSyncManagerPeerRemoved(int peer_id)

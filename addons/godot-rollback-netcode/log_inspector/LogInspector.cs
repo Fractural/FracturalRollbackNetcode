@@ -7,13 +7,9 @@ using GDC = Godot.Collections;
 
 namespace Fractural.RollbackNetcode
 {
-    // TODO NOW: Finish this;
     [Tool]
     public partial class LogInspector : Control
     {
-        public const var LogData = GD.Load("res://addons/godot-rollback-netcode/log_inspector/LogData.gd");
-        public const var ReplayServer = GD.Load("res://addons/godot-rollback-netcode/log_inspector/ReplayServer.gd");
-
         [OnReadyGet("FileDialog")]
         public FileDialog file_dialog;
         [OnReadyGet("ProgressDialog")]
@@ -22,7 +18,7 @@ namespace Fractural.RollbackNetcode
         public Label data_description_label;
         public string data_description_label_default_text;
         [OnReadyGet("MarginContainer/VBoxContainer/LoadToolbar/ModeButton")]
-        public Button mode_button;
+        public OptionButton mode_button;
         [OnReadyGet("MarginContainer/VBoxContainer/StateInputViewer")]
         public StateInputViewer state_input_viewer;
         [OnReadyGet("MarginContainer/VBoxContainer/FrameViewer")]
@@ -49,6 +45,7 @@ namespace Fractural.RollbackNetcode
         }
 
         public LogData log_data = new LogData();
+        // filePaths: string[]
         public GDC.Array _files_to_load = new GDC.Array() { };
 
         public override void _Ready()
@@ -57,10 +54,10 @@ namespace Fractural.RollbackNetcode
             state_input_viewer.SetLogData(log_data);
             frame_viewer.SetLogData(log_data);
 
-            log_data.Connect("load_error", this, "_on_log_data_load_error");
-            log_data.Connect("load_progress", this, "_on_log_data_load_progress");
-            log_data.Connect("load_finished", this, "_on_log_data_load_finished");
-            log_data.Connect("data_updated", this, "refresh_from_log_data");
+            log_data.LoadError += _OnLogDataLoadError;
+            log_data.LoadProgress += _OnLogDataLoadProgress;
+            log_data.LoadFinished += _OnLogDataLoadFinished;
+            log_data.DataUpdated += RefreshFromLogData;
 
             state_input_viewer.SetReplayServer(replay_server);
             frame_viewer.SetReplayServer(replay_server);
@@ -76,6 +73,17 @@ namespace Fractural.RollbackNetcode
                 MarginRight = 0;
                 MarginBottom = 0;
                 StartLogInspector();
+            }
+        }
+
+        public override void _Notification(int what)
+        {
+            if (what == NotificationPredelete)
+            {
+                log_data.LoadError -= _OnLogDataLoadError;
+                log_data.LoadProgress -= _OnLogDataLoadProgress;
+                log_data.LoadFinished -= _OnLogDataLoadFinished;
+                log_data.DataUpdated -= RefreshFromLogData;
             }
         }
 
@@ -101,10 +109,9 @@ namespace Fractural.RollbackNetcode
             if (log_data.IsLoading())
                 return;
             log_data.Clear();
-            data_description_label.text = data_description_label_default_text;
+            data_description_label.Text = data_description_label_default_text;
             state_input_viewer.Clear();
             frame_viewer.Clear();
-
         }
 
         public void _OnAddLogButtonPressed()
@@ -113,7 +120,6 @@ namespace Fractural.RollbackNetcode
             file_dialog.CurrentPath = "";
             file_dialog.ShowModal();
             file_dialog.Invalidate();
-
         }
 
         public void _OnFileDialogFilesSelected(string[] paths)
@@ -122,16 +128,14 @@ namespace Fractural.RollbackNetcode
             {
                 bool already_loading = (_files_to_load.Count > 0) || log_data.IsLoading();
                 foreach (var path in paths)
-                {
                     _files_to_load.Add(path);
-                }
+
                 if (!already_loading)
                 {
                     var first_file = _files_to_load.PopFrontList<string>();
                     UpdateProgressDialogLabel(first_file.GetFile());
                     progress_dialog.PopupCentered();
                     log_data.LoadLogFile(first_file);
-
                 }
             }
         }
@@ -139,94 +143,75 @@ namespace Fractural.RollbackNetcode
         public void RefreshFromLogData()
         {
             if (log_data.IsLoading())
-            {
                 return;
 
-            }
-            data_description_label.text = "%s Logs (peer ids: %s) && %s ticks" % [log_data.peer_ids.Size(), log_data.peer_ids, log_data.max_tick]
+            data_description_label.Text = $"{log_data.peer_ids.Count} Logs (peer ids: {log_data.peer_ids}) && {log_data.max_tick} ticks";
 
+            if (log_data.mismatches.Count > 0)
+                data_description_label.Text += $" with {log_data.mismatches.Count} mismatches";
 
-        if (log_data.mismatches.Size() > 0)
-            {
-                data_description_label.text += " with %s mismatches" % log_data.mismatches.Size();
-
-            }
             show_peer_field.Clear();
-            foreach (var peer_id in log_data.peer_ids)
-            {
-                show_peer_field.AddItem("Peer %s" % peer_id, peer_id);
+            foreach (int peer_id in log_data.peer_ids)
+                show_peer_field.AddItem($"Peer {peer_id}", peer_id);
 
-            }
             RefreshReplay();
             state_input_viewer.RefreshFromLogData();
             frame_viewer.RefreshFromLogData();
 
         }
 
-        public void _OnLogDataLoadError(__TYPE msg)
+        public void _OnLogDataLoadError(string msg)
         {
             progress_dialog.Hide();
             _files_to_load.Clear();
             OS.Alert(msg);
-
         }
 
-        public void _OnLogDataLoadProgress(__TYPE current, __TYPE total)
+        public void _OnLogDataLoadProgress(ulong current, ulong total)
         {
             progress_dialog.UpdateProgress(current, total);
-
         }
 
         public void _OnLogDataLoadFinished()
         {
-            if (_files_to_load.Size() > 0)
+            if (_files_to_load.Count > 0)
             {
-                var next_file = _files_to_load.PopFront();
-                progress_dialog.SetLabel(LOADING_LABEL % next_file.GetFile());
+                var next_file = _files_to_load.PopFrontList<string>();
+                UpdateProgressDialogLabel(next_file.GetFile());
                 log_data.LoadLogFile(next_file);
             }
             else
-            {
                 progress_dialog.Hide();
-
-            }
         }
 
         public void _OnModeButtonItemSelected(int index)
         {
-            state_input_viewer.visible = false;
-            frame_viewer.visible = false;
+            state_input_viewer.Visible = false;
+            frame_viewer.Visible = false;
 
-            if (index == DataMode.STATE_INPUT)
+            switch ((DataMode)index)
             {
-                state_input_viewer.visible = true;
-            }
-            else if (index == DataMode.FRAME)
-            {
-                frame_viewer.visible = true;
-
+                case DataMode.STATE_INPUT:
+                    state_input_viewer.Visible = true;
+                    break;
+                case DataMode.FRAME:
+                    frame_viewer.Visible = true;
+                    break;
             }
             RefreshReplay();
-
         }
 
         public void _OnStartServerButtonPressed()
         {
             replay_server.StartListening();
-
         }
 
         public void _OnStopServerButtonPressed()
         {
             if (replay_server.IsConnectedToGame())
-            {
                 replay_server.DisconnectFromGame(false);
-            }
             else
-            {
                 replay_server.StopListening();
-
-            }
         }
 
         public void UpdateReplayServerStatus()
@@ -234,25 +219,25 @@ namespace Fractural.RollbackNetcode
             switch (replay_server.GetStatus())
             {
                 case ReplayServer.Status.NONE:
-                    replay_server_status_label.text = "Disabled.";
-                    start_server_button.disabled = false;
-                    stop_server_button.disabled = true;
-                    disconnect_button.disabled = true;
-                    launch_game_button.disabled = true;
+                    replay_server_status_label.Text = "Disabled.";
+                    start_server_button.Disabled = false;
+                    stop_server_button.Disabled = true;
+                    disconnect_button.Disabled = true;
+                    launch_game_button.Disabled = true;
                     break;
                 case ReplayServer.Status.LISTENING:
-                    replay_server_status_label.text = "Listening for connections...";
-                    start_server_button.disabled = true;
-                    stop_server_button.disabled = false;
-                    disconnect_button.disabled = true;
-                    launch_game_button.disabled = false;
+                    replay_server_status_label.Text = "Listening for connections...";
+                    start_server_button.Disabled = true;
+                    stop_server_button.Disabled = false;
+                    disconnect_button.Disabled = true;
+                    launch_game_button.Disabled = false;
                     break;
                 case ReplayServer.Status.CONNECTED:
-                    replay_server_status_label.text = "Connected to game.";
-                    start_server_button.disabled = true;
-                    stop_server_button.disabled = false;
-                    disconnect_button.disabled = false;
-                    launch_game_button.disabled = true;
+                    replay_server_status_label.Text = "Connected to game.";
+                    start_server_button.Disabled = true;
+                    stop_server_button.Disabled = false;
+                    disconnect_button.Disabled = false;
+                    launch_game_button.Disabled = true;
 
                     break;
             }
@@ -262,55 +247,48 @@ namespace Fractural.RollbackNetcode
         {
             var replay_peer_id = show_peer_field.GetSelectedId();
 
-            if (replay_server)
-            {
+            if (replay_server != null)
                 replay_server.SendMatchInfo(log_data, replay_peer_id);
 
-            }
             state_input_viewer.SetReplayPeerId(replay_peer_id);
             frame_viewer.SetReplayPeerId(replay_peer_id);
 
-            var mode = mode_button.selected;
-            if (mode == DataMode.STATE_INPUT)
+            var mode = mode_button.Selected;
+            switch ((DataMode)mode)
             {
-                state_input_viewer.RefreshReplay();
-            }
-            else if (mode == DataMode.FRAME)
-            {
-                frame_viewer.RefreshReplay();
-
+                case DataMode.STATE_INPUT:
+                    state_input_viewer.RefreshReplay();
+                    break;
+                case DataMode.FRAME:
+                    frame_viewer.RefreshReplay();
+                    break;
             }
         }
 
         public void _OnReplayServerStartedListening()
         {
             UpdateReplayServerStatus();
-
         }
 
         public void _OnReplayServerStoppedListening()
         {
             UpdateReplayServerStatus();
-
         }
 
         public void _OnReplayServerGameConnected()
         {
             UpdateReplayServerStatus();
             RefreshReplay();
-
         }
 
         public void _OnReplayServerGameDisconnected()
         {
             UpdateReplayServerStatus();
-
         }
 
         public void _OnLaunchGameButtonPressed()
         {
             replay_server.LaunchGame();
-
         }
 
         public void _OnDisconnectButtonPressed()

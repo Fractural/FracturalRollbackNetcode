@@ -17,7 +17,7 @@ namespace Fractural.RollbackNetcode
 
         public bool _running = false;
 
-        [Signal] delegate void Timeout();
+        public event Action Timeout;
 
         public override void _Ready()
         {
@@ -65,25 +65,20 @@ namespace Fractural.RollbackNetcode
         public void _NetworkProcess(GDC.Dictionary _input)
         {
             if (!_running)
-            {
                 return;
-            }
+
             if (ticks_left <= 0)
             {
                 _running = false;
                 return;
-
             }
             ticks_left -= 1;
 
             if (ticks_left == 0)
             {
                 if (!one_shot)
-                {
                     ticks_left = wait_ticks;
-                }
-                EmitSignal("timeout");
-
+                Timeout?.Invoke();
             }
         }
 
