@@ -102,6 +102,13 @@ _global_script_class_icons={
 "NakamaWriteStorageObject": ""
 }
 
+[FracturalCommons]
+
+Main/GenerateVersionPreprocessorDefines=false
+"C# Resource Registry/ClassPrefix"=""
+"C# Resource Registry/SearchType"=0
+"C# Resource Registry/ResourceScriptDirectories"=[ "res://" ]
+
 [application]
 
 config/name="FracturalRollbackNetcode"
@@ -113,14 +120,17 @@ SyncManager="*res://addons/godot-rollback-netcode/SyncManager.cs"
 SyncDebugger="*res://addons/godot-rollback-netcode/SyncDebugger.cs"
 SyncReplay="*res://addons/godot-rollback-netcode/SyncReplay.cs"
 
+[debug]
+
+multirun/number_of_windows=2
+multirun/window_distance=1270
+multirun/add_custom_args=true
+multirun/first_window_args="listen"
+multirun/other_window_args="join"
+
 [editor_plugins]
 
-enabled=PoolStringArray( "res://addons/gd2cs.py/plugin.cfg" )
-
-[gd2cs]
-
-config/ask_no_python=true
-config/python="py"
+enabled=PoolStringArray( "res://addons/FracturalCommons/plugin.cfg", "res://addons/godot-rollback-netcode/plugin.cfg", "res://addons/multirun/plugin.cfg" )
 
 [gdnative]
 
@@ -172,10 +182,20 @@ player2_right={
 "events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt":false,"shift":false,"control":false,"meta":false,"command":false,"pressed":false,"scancode":0,"physical_scancode":16777233,"unicode":0,"echo":false,"script":null)
  ]
 }
+sync_debug={
+"deadzone": 0.5,
+"events": [ Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"alt":false,"shift":false,"control":false,"meta":false,"command":false,"pressed":false,"scancode":16777254,"physical_scancode":0,"unicode":0,"echo":false,"script":null)
+ ]
+}
 
 [mono]
 
 project/assembly_name="FracturalRollbackNetcode"
+
+[network]
+
+rollback/debug/rollback_ticks=2
+rollback/debug/random_rollback_ticks=3
 
 [physics]
 

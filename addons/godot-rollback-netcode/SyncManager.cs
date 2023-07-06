@@ -1421,7 +1421,7 @@ namespace Fractural.RollbackNetcode
                     _HandleFatalError($"Not enough state in buffer to rollback {rollback_ticks} frames");
                     return;
                 }
-                _CallLoadState(state_buffer[-rollback_ticks - 1].data);
+                _CallLoadState(state_buffer[state_buffer.Count - rollback_ticks - 1].data);
 
                 current_tick -= rollback_ticks;
                 if (debug_check_local_state_consistency)

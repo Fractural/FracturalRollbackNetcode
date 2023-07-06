@@ -1,26 +1,28 @@
 
 using System;
+using Fractural.Plugin;
 using Godot;
 using GDC = Godot.Collections;
 
 namespace Fractural.RollbackNetcode
 {
     [Tool]
-    public class Plugin : EditorPlugin
+    public class RollbackNetcodePlugin : ExtendedPlugin
     {
-        public PackedScene LogInspectorPrefab = GD.Load<PackedScene>("res://addons/godot-rollback-netcode/log_inspector/LogInspector.tscn");
+        public override string PluginName => "Fractural Rollback Netcode";
 
-        public LogInspector log_inspector;
+        private PackedScene _logInspectorPrefab = GD.Load<PackedScene>("res://addons/godot-rollback-netcode/log_inspector/LogInspector.tscn");
+        private LogInspector _logInspector;
 
-        public override void _EnterTree()
+        protected override void Load()
         {
             CustomProjectSettings.AddProjectSettings();
 
-            //AddAutoloadSingleton("SyncManager", "res://addons/godot-rollback-netcode/SyncManager.gd");
+            AddAutoloadSingleton("SyncManager", "res://addons/godot-rollback-netcode/SyncManager.cs");
 
-            log_inspector = LogInspectorPrefab.Instance<LogInspector>();
-            GetEditorInterface().GetBaseControl().AddChild(log_inspector);
-            log_inspector.Construct(GetEditorInterface());
+            _logInspector = _logInspectorPrefab.Instance<LogInspector>();
+            GetEditorInterface().GetBaseControl().AddChild(_logInspector);
+            _logInspector.Construct(GetEditorInterface());
             AddToolMenuItem("Log inspector...", this, nameof(OpenLogInspector));
 
             if (!ProjectSettings.HasSetting("input/sync_debug"))
@@ -42,19 +44,19 @@ namespace Fractural.RollbackNetcode
             }
         }
 
-        public override void _ExitTree()
+        protected override void Unload()
         {
             RemoveToolMenuItem("Log inspector...");
-            if (log_inspector != null)
+            if (_logInspector != null)
             {
-                log_inspector.Free();
-                log_inspector = null;
+                _logInspector.QueueFree();
+                _logInspector = null;
             }
         }
 
-        public void OpenLogInspector(object userData)
+        private void OpenLogInspector(object userData)
         {
-            log_inspector.PopupCenteredRatio();
+            _logInspector.PopupCenteredRatio();
         }
     }
 }

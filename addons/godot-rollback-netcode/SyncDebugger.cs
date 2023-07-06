@@ -56,6 +56,20 @@ namespace Fractural.RollbackNetcode
             }
         }
 
+        public override void _UnhandledInput(InputEvent @event)
+        {
+            var action_pressed = @event.IsActionPressed("sync_debug");
+            if (action_pressed)
+            {
+                if (!_debug_pressed)
+                {
+                    _debug_pressed = true;
+                    ShowDebugOverlay(!IsDebugOverlayShown());
+                }
+            }
+            else
+                _debug_pressed = false;
+        }
 
         public void CreateDebugOverlay(DebugOverlay overlay_instance = null)
         {
@@ -145,21 +159,6 @@ namespace Fractural.RollbackNetcode
         public void _OnSyncManagerTickFinished(bool is_rollback)
         {
 
-        }
-
-        public void _UnhandledInput(InputEvent @event)
-        {
-            var action_pressed = @event.IsActionPressed("sync_debug");
-            if (action_pressed)
-            {
-                if (!_debug_pressed)
-                {
-                    _debug_pressed = true;
-                    ShowDebugOverlay(!IsDebugOverlayShown());
-                }
-            }
-            else
-                _debug_pressed = false;
         }
     }
 }
