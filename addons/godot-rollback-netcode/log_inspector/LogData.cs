@@ -11,13 +11,15 @@ namespace Fractural.RollbackNetcode
     [Tool]
     public class LogData : Reference
     {
-        public class StateData
+        public class StateData : Reference
         {
             public int tick;
             public GDC.Dictionary state;
             public int state_hash;
-            public IDictionary<int, GDC.Dictionary> mismatches = new Dictionary<int, GDC.Dictionary>() { };
+            // [tick: int]: mismatch: GDC.Dictionary
+            public GDC.Dictionary mismatches = new GDC.Dictionary() { };
 
+            public StateData() { }
             public StateData(int _tick, GDC.Dictionary _state)
             {
                 tick = _tick;
@@ -34,13 +36,16 @@ namespace Fractural.RollbackNetcode
             }
         }
 
-        public class InputData
+        public class InputData : Reference
         {
             public int tick;
+            // [peerId: int]: inputData: GDC.Dictionary
             public GDC.Dictionary input;
             public int input_hash;
-            public IDictionary<int, GDC.Dictionary> mismatches = new Dictionary<int, GDC.Dictionary>();
+            // [tick: int]: mismatch: GDC.Dictionary
+            public GDC.Dictionary mismatches = new GDC.Dictionary();
 
+            public InputData() { }
             public InputData(int _tick, GDC.Dictionary _input)
             {
                 tick = _tick;
@@ -50,8 +55,8 @@ namespace Fractural.RollbackNetcode
 
             public GDC.Dictionary SortDictionary(GDC.Dictionary d)
             {
-                var keys = new List<object>(d.Keys.Cast<string>());
-                keys.Sort();
+                var keys = new List<object>(d.Keys.Cast<object>());
+                keys.Sort(Utils.GDKeyComparer);
 
                 GDC.Dictionary ret = new GDC.Dictionary() { };
                 foreach (var key in keys)
@@ -75,13 +80,13 @@ namespace Fractural.RollbackNetcode
 
             public GDC.Dictionary GetInputForPeer(int peer_id, int according_to_peer_id = -1)
             {
-                if (according_to_peer_id != -1 && mismatches.ContainsKey(according_to_peer_id))
-                    return mismatches[according_to_peer_id].Get(peer_id, new GDC.Dictionary() { });
+                if (according_to_peer_id != -1 && mismatches.Contains(according_to_peer_id))
+                    return mismatches.Get<GDC.Dictionary>(according_to_peer_id).Get(peer_id, new GDC.Dictionary() { });
                 return input.Get(peer_id, new GDC.Dictionary() { });
             }
         }
 
-        public class FrameData
+        public class FrameData : Reference
         {
             public int frame;
             public Logger.FrameType type;
@@ -89,6 +94,7 @@ namespace Fractural.RollbackNetcode
             public int start_time;
             public int end_time;
 
+            public FrameData() { }
             public FrameData(int _frame, Logger.FrameType _type, GDC.Dictionary _data)
             {
                 frame = _frame;
@@ -221,9 +227,14 @@ namespace Fractural.RollbackNetcode
 
             while (!file.EofReached())
             {
+                //GD.Print("Log data reading data: ");
                 var data = file.GetVar();
+                //GD.Print("\t Got data ", data, " ", data.GetType());
                 if (data == null || !(data is GDC.Dictionary dataDict))
+                {
+                    GD.Print("Get var failed, ", data);
                     continue;
+                }
 
                 if (header == null)
                 {
@@ -282,6 +293,8 @@ namespace Fractural.RollbackNetcode
             DataUpdated?.Invoke();
             LoadFinished?.Invoke();
             _SetLoading(false);
+
+            GD.Print("Log data finished loading");
         }
 
         public void _AddLogEntry(GDC.Dictionary log_entry, int peer_id)

@@ -43,7 +43,7 @@ namespace Fractural.RollbackNetcode
             {
                 ushort port = 49111;
                 if (ProjectSettings.HasSetting(GAME_PORT_SETTING))
-                    port = ProjectSettingsUtils.GetSetting<ushort>(GAME_PORT_SETTING);
+                    port = (ushort)ProjectSettingsUtils.GetSetting<int>(GAME_PORT_SETTING);
 
                 server = new TCP_Server();
                 server.Listen(port, "127.0.0.1");

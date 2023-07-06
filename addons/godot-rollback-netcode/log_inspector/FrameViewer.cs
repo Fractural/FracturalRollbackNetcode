@@ -68,6 +68,7 @@ namespace Fractural.RollbackNetcode
 
         public void RefreshFromLogData()
         {
+            GD.Print("Refresh, is loading? ", _logData.IsLoading());
             if (_logData.IsLoading())
                 return;
             _timeSpinBox.MaxValue = _logData.end_time - _logData.start_time;
@@ -76,6 +77,7 @@ namespace Fractural.RollbackNetcode
             _dataGrid.RefreshFromLogData();
             _settingsDialog.RefreshFromLogData();
 
+            GD.Print("Time value changed? ", _timeSpinBox.Value);
             _replayFrame = -1;
             _OnTimeValueChanged(_timeSpinBox.Value);
         }
@@ -115,8 +117,10 @@ namespace Fractural.RollbackNetcode
 
         public void _OnTimeValueChanged(double value)
         {
+            GD.Print("Time value changed,  is loading: ", _logData.IsLoading());
             if (_logData.IsLoading())
                 return;
+            GD.Print("Seting time to new value");
             var time = (int)(value);
 
             // Update our tracking of the current frame.

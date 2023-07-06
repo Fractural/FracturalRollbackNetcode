@@ -53,5 +53,15 @@ namespace Fractural.RollbackNetcode
             }
             return obj.Callv(Snake2Pascal(snakeCaseMethod), argArray);
         }
+
+        public static int GDKeyComparer(object a, object b)
+        {
+            if (a is string aString && b is string bString)
+                return aString.CompareTo(bString);
+            else if (a is int aInt && b is int bInt)
+                return aInt.CompareTo(bInt);
+            else
+                return a is string ? 1 : -1;
+        }
     }
 }

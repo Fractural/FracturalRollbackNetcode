@@ -46,7 +46,7 @@ namespace Fractural.RollbackNetcode
         }
 
         public bool show_network_arrows = true;
-        // peerIds: int[]
+        //  peerIds: int[]
         public GDC.Array network_arrow_peers = new GDC.Array() { };
 
         public bool show_rollback_ticks = true;
@@ -123,10 +123,13 @@ namespace Fractural.RollbackNetcode
 
         public void _DrawPeer(int peer_id, Rect2 peer_rect, GDC.Dictionary draw_data)
         {
+            //GD.Print("DrawPeer");
+            //GD.Print("1");
             var relative_start_time = start_time - EXTRA_WIDTH;
             if (relative_start_time < 0)
                 relative_start_time = 0;
 
+            //GD.Print("2");
             int absolute_start_time = log_data.start_time + relative_start_time;
             int absolute_end_time = absolute_start_time + (int)peer_rect.Size.x + (EXTRA_WIDTH * 2);
             LogData.FrameData frame = log_data.GetFrameByTime(peer_id, absolute_start_time);
@@ -134,6 +137,7 @@ namespace Fractural.RollbackNetcode
                 frame = log_data.GetFrame(peer_id, 0);
             if (frame == null)
                 return;
+            //GD.Print("3");
             // data: GDC.Array<GDC.Array: [font: DynamicFont, position: Vector2, tick_letter: string, color: Color]>
             GDC.Array tick_numbers_to_draw = new GDC.Array() { };
 
@@ -141,6 +145,7 @@ namespace Fractural.RollbackNetcode
             GDC.Dictionary network_arrow_start_positions = new GDC.Dictionary() { };
             GDC.Dictionary network_arrow_end_positions = new GDC.Dictionary() { };
 
+            //GD.Print("4");
             int other_network_arrow_peer_id = 0;
             if (capture_network_arrow_positions)
             {
@@ -153,6 +158,7 @@ namespace Fractural.RollbackNetcode
                     }
                 }
             }
+            //GD.Print("5");
             string other_network_arrow_peer_key = $"remote_ticks_received_from_{other_network_arrow_peer_id}";
 
             // Adjust the peer rect for the extra width.
@@ -160,20 +166,27 @@ namespace Fractural.RollbackNetcode
             extended_peer_rect.Position = extended_peer_rect.Position - new Vector2((start_time > EXTRA_WIDTH ? EXTRA_WIDTH : start_time), 0);
             extended_peer_rect.Size = extended_peer_rect.Size + new Vector2(EXTRA_WIDTH * 2, 0);
 
+            //GD.Print("6");
 
             Vector2 last_rollback_point = default;
             while (frame.start_time <= absolute_end_time)
             {
+                //GD.Print("6.1");
                 Rect2 frame_rect = new Rect2(
                     new Vector2(extended_peer_rect.Position.x + frame.start_time - absolute_start_time, extended_peer_rect.Position.y),
                     new Vector2(frame.end_time - frame.start_time, extended_peer_rect.Size.y));
+
+                //GD.Print("6.2");
                 if (frame_rect.Intersects(extended_peer_rect))
                 {
+                    //GD.Print("6.2.1");
                     frame_rect = frame_rect.Clip(extended_peer_rect);
                     if (frame_rect.Size.x == 0)
                         frame_rect.Size = new Vector2(1, frame_rect.Size.y);
+                    //GD.Print("6.2.2");
                     bool skipped = frame.data.Get<bool>("skipped", false);
                     bool fatal_error = frame.data.Get<bool>("fatal_error", false);
+                    //GD.Print("6.2.3");
                     Vector2 center_position = frame_rect.Position + (frame_rect.Size / 2f);
                     Color frame_color = default;
                     if (fatal_error)
@@ -185,6 +198,8 @@ namespace Fractural.RollbackNetcode
                         frame_rect.Size = new Vector2(3f, frame_rect.Size.y);
                         frame_rect.Position = frame_rect.Position - new Vector2(1.5f, 0);
                     }
+
+                    //GD.Print("6.2.4");
                     if (frame.data.Contains("skip_reason"))
                     {
                         string tick_letter = "";
@@ -208,6 +223,7 @@ namespace Fractural.RollbackNetcode
                         frame_color = FRAME_TYPE_COLOR.Get<Color>(frame.type);
                     DrawRect(frame_rect, frame_color);
 
+                    //GD.Print("6.2.5");
                     if (frame.type == Logger.FrameType.TICK && frame.data.Contains("tick") && !skipped)
                     {
                         int tick = frame.data.Get<int>("tick");
@@ -218,36 +234,55 @@ namespace Fractural.RollbackNetcode
                             network_arrow_start_positions[input_tick] = center_position;
                         }
                     }
+
+                    //GD.Print("6.2.6");
                     if (capture_network_arrow_positions && frame.data.Contains(other_network_arrow_peer_key))
                     {
                         foreach (int tick in frame.data.Get<GDC.Dictionary>(other_network_arrow_peer_key).Keys)
                             network_arrow_end_positions[tick] = center_position;
                     }
+
+                    //GD.Print("6.2.7");
+
                     if (show_rollback_ticks && frame.data.Contains("rollback_ticks"))
                     {
-                        var rollback_height = extended_peer_rect.Size.y * ((float)(frame.data["rollback_ticks"]) / (float)(max_rollback_ticks));
+                        //GD.Print("6.2.7.1 frame data: ", JSON.Print(frame.data));
+                        var rollback_height = extended_peer_rect.Size.y * ((float)(frame.data.Get<int>("rollback_ticks")) / (float)(max_rollback_ticks));
+                        //GD.Print("6.2.7.2");
                         if (rollback_height > extended_peer_rect.Size.y)
                             rollback_height = extended_peer_rect.Size.y;
+                        //GD.Print("6.2.7.3");
                         Vector2 rollback_point = new Vector2(center_position.x, frame_rect.Position.y + frame_rect.Size.y - rollback_height);
+                        //GD.Print("6.2.7.4");
                         if (last_rollback_point != null)
                             DrawLine(last_rollback_point, rollback_point, ROLLBACK_LINE_COLOR, 2f, true);
+                        //GD.Print("6.2.7.5");
                         last_rollback_point = rollback_point;
                     }
                 }
+
+                //GD.Print("6.3");
                 // Move on to the next frame.
                 if (frame.frame < log_data.GetFrameCount(peer_id) - 1)
                     frame = log_data.GetFrame(peer_id, frame.frame + 1);
                 else
                     break;
             }
+
+            //GD.Print("7");
             foreach (GDC.Array tick_number_to_draw in tick_numbers_to_draw)
                 DrawString(tick_number_to_draw.ElementAt<Font>(0), tick_number_to_draw.ElementAt<Vector2>(1), tick_number_to_draw.ElementAt<string>(2), tick_number_to_draw.ElementAt<Color>(3));
+
+
+            //GD.Print("8");
             if (capture_network_arrow_positions)
             {
                 if (!draw_data.Contains("network_arrow_positions"))
                     draw_data["network_arrow_positions"] = new GDC.Array() { };
                 draw_data.Get<GDC.Array>("network_arrow_positions").Add(new GDC.Array() { network_arrow_start_positions, network_arrow_end_positions });
             }
+
+            //GD.Print("9");
         }
 
         public void _DrawNetworkArrows(GDC.Dictionary start_positions, GDC.Dictionary end_positions, Color color)

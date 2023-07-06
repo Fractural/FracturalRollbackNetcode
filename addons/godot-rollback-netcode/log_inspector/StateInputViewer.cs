@@ -89,8 +89,8 @@ namespace Fractural.RollbackNetcode
                 {
                     GDC.Dictionary state_data;
 
-                    if (state_frame.mismatches.ContainsKey(_replayPeerId))
-                        state_data = state_frame.mismatches[_replayPeerId];
+                    if (state_frame.mismatches.Contains(_replayPeerId))
+                        state_data = state_frame.mismatches.Get<GDC.Dictionary>(_replayPeerId);
                     else
                         state_data = state_frame.state;
 
@@ -172,7 +172,8 @@ namespace Fractural.RollbackNetcode
             }
         }
 
-        public void _CreateTreeFromMismatches(Tree tree, GDC.Dictionary data, IDictionary<int, GDC.Dictionary> mismatches)
+        // mistmatches = [tick: int]: mistmatch: GDC.Dictionary
+        public void _CreateTreeFromMismatches(Tree tree, GDC.Dictionary data, GDC.Dictionary mismatches)
         {
             if (mismatches.Count == 0)
                 return;
@@ -180,7 +181,7 @@ namespace Fractural.RollbackNetcode
             var root = tree.CreateItem();
             foreach (var peer_id in mismatches.Keys)
             {
-                var peer_data = mismatches[peer_id];
+                var peer_data = mismatches.Get<GDC.Dictionary>(peer_id);
 
                 var peer_item = tree.CreateItem(root);
                 peer_item.SetText(0, $"Peer {peer_id}");

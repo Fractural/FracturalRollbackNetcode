@@ -1901,8 +1901,8 @@ namespace Fractural.RollbackNetcode
         {
             GDC.Dictionary output = new GDC.Dictionary() { };
 
-            var keys = new List<string>(input.Keys.Cast<string>());
-            keys.Sort();
+            var keys = new List<object>(input.Keys.Cast<object>());
+            keys.Sort(Utils.GDKeyComparer);
             foreach (var key in keys)
                 output[key] = input[key];
             return output;
