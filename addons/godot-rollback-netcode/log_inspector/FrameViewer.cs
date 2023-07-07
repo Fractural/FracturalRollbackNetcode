@@ -39,8 +39,8 @@ namespace Fractural.RollbackNetcode
         private ReplayServer _replayServer;
         private int _replayPeerId;
 
-        private int _replayFrame = -1;
-        private int _replayLastInterpolationFrameTime = 0;
+        private long _replayFrame = -1;
+        private long _replayLastInterpolationFrameTime = 0;
 
         // [peerId: int]: currentFrame: int
         private GDC.Dictionary _currentFrames = new GDC.Dictionary() { };
@@ -121,7 +121,7 @@ namespace Fractural.RollbackNetcode
             if (_logData.IsLoading())
                 return;
             GD.Print("Seting time to new value");
-            var time = (int)(value);
+            var time = (long)(value);
 
             // Update our tracking of the current frame.
             foreach (int peer_id in _logData.peer_ids)
@@ -149,14 +149,14 @@ namespace Fractural.RollbackNetcode
             if (_logData.IsLoading())
                 return;
 
-            int frame_time = 0;
+            long frame_time = 0;
 
             if (_seekOnReplayPeerCheckBox.Pressed)
                 frame_time = _GetPreviousFrameTimeForPeer(_replayPeerId);
             else
             {
-                foreach (int peer_id in _currentFrames)
-                    frame_time = (int)(Mathf.Max(frame_time, _GetPreviousFrameTimeForPeer(peer_id)));
+                foreach (int peer_id in _currentFrames.Keys)
+                    frame_time = Math.Max(frame_time, _GetPreviousFrameTimeForPeer(peer_id));
             }
             if (frame_time > _logData.start_time)
                 _timeSpinBox.Value = frame_time - _logData.start_time;
@@ -164,7 +164,7 @@ namespace Fractural.RollbackNetcode
                 _timeSpinBox.Value = 0;
         }
 
-        public int _GetPreviousFrameTimeForPeer(int peer_id)
+        public long _GetPreviousFrameTimeForPeer(int peer_id)
         {
             var frame_id = _currentFrames.Get<int>(peer_id);
             if (frame_id > 0)
@@ -172,13 +172,11 @@ namespace Fractural.RollbackNetcode
 
             LogData.FrameData frame = _logData.GetFrame(peer_id, frame_id);
             return frame.start_time;
-
         }
 
         public void _OnNextFrameButtonPressed()
         {
             JumpToNextFrame();
-
         }
 
         public void JumpToNextFrame()
@@ -200,7 +198,7 @@ namespace Fractural.RollbackNetcode
                 {
                     var peer_frame_time = _GetNextFrameTimeForPeer(peer_id);
                     if (peer_frame_time != 0)
-                        frame_time = (int)(Mathf.Min(frame_time, _GetNextFrameTimeForPeer(peer_id)));
+                        frame_time = Math.Min(frame_time, _GetNextFrameTimeForPeer(peer_id));
                 }
             }
             if (frame_time > _logData.start_time)
@@ -209,7 +207,7 @@ namespace Fractural.RollbackNetcode
                 _timeSpinBox.Value = 0;
         }
 
-        public int _GetNextFrameTimeForPeer(int peer_id)
+        public long _GetNextFrameTimeForPeer(int peer_id)
         {
             var frame_id = _currentFrames.Get<int>(peer_id);
             if (frame_id < _logData.GetFrameCount(peer_id) - 1)
@@ -244,12 +242,10 @@ namespace Fractural.RollbackNetcode
                 _replayServer.SendMatchInfo(_logData, _replayPeerId);
             }
             _replayFrame += 1;
-            foreach (var frame_id in GD.Range(_replayFrame, _logData.frames.Get<GDC.Array>(_replayPeerId).Count))
+            for (long frame_id = _replayFrame; frame_id < _logData.frames.Get<GDC.Array>(_replayPeerId).Count; frame_id++)
             {
                 if (frame_id > current_frame_id)
-                {
                     break;
-                }
                 LogData.FrameData frame_data = _logData.GetFrame(_replayPeerId, frame_id);
                 _SendReplayFrameData(frame_data);
             }
@@ -280,11 +276,11 @@ namespace Fractural.RollbackNetcode
                         ["tick"] = _logData.input.Get<LogData.InputData>(tick).GetInputForPeer(_replayPeerId, _replayPeerId),
                     };
                 }
-                _replayLastInterpolationFrameTime = frame_data.data.Get<int>("end_time");
+                _replayLastInterpolationFrameTime = frame_data.data.GetSerializedPrimitive<long>("end_time");
             }
             else if (frame_type == Logger.FrameType.INTERPOLATION_FRAME)
             {
-                var start_time = frame_data.data.Get<int>("start_time");
+                var start_time = frame_data.data.GetSerializedPrimitive<long>("start_time");
                 if (_replayLastInterpolationFrameTime > 0)
                     msg["delta"] = (start_time - _replayLastInterpolationFrameTime) / 1000.0;
                 else

@@ -9,8 +9,8 @@ namespace Fractural.RollbackNetcode
     [Tool]
     public class FrameDataGraphCanvas : Control
     {
-        private int _start_time = 0;
-        public int start_time
+        private long _start_time = 0;
+        public long start_time
         {
             get => _start_time;
             set
@@ -24,8 +24,8 @@ namespace Fractural.RollbackNetcode
             }
         }
 
-        private int _cursor_time = -1;
-        public int cursor_time
+        private long _cursor_time = -1;
+        public long cursor_time
         {
             get => _cursor_time;
             set
@@ -71,9 +71,9 @@ namespace Fractural.RollbackNetcode
         public DynamicFont _font;
         public DynamicFont _font_big;
 
-        public delegate void CursorTimeChangedDelegate(int cursor_time);
+        public delegate void CursorTimeChangedDelegate(long cursor_time);
         public event CursorTimeChangedDelegate CursorTimeChanged;
-        public delegate void StartTimeChangedDelegate(int start_time);
+        public delegate void StartTimeChangedDelegate(long start_time);
         public event StartTimeChangedDelegate StartTimeChanged;
 
         public void Construct(LogData _log_data)
@@ -130,8 +130,8 @@ namespace Fractural.RollbackNetcode
                 relative_start_time = 0;
 
             //GD.Print("2");
-            int absolute_start_time = log_data.start_time + relative_start_time;
-            int absolute_end_time = absolute_start_time + (int)peer_rect.Size.x + (EXTRA_WIDTH * 2);
+            long absolute_start_time = log_data.start_time + relative_start_time;
+            long absolute_end_time = absolute_start_time + (long)peer_rect.Size.x + (EXTRA_WIDTH * 2);
             LogData.FrameData frame = log_data.GetFrameByTime(peer_id, absolute_start_time);
             if (frame == null && log_data.GetFrameCount(peer_id) > 0)
                 frame = log_data.GetFrame(peer_id, 0);
@@ -287,7 +287,7 @@ namespace Fractural.RollbackNetcode
 
         public void _DrawNetworkArrows(GDC.Dictionary start_positions, GDC.Dictionary end_positions, Color color)
         {
-            foreach (var tick in start_positions)
+            foreach (var tick in start_positions.Keys)
             {
                 if (!end_positions.Contains(tick))
                     continue;

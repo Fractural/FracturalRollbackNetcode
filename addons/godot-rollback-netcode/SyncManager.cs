@@ -1863,10 +1863,10 @@ namespace Fractural.RollbackNetcode
 
         public void _ProcessMechanizedInput()
         {
-            foreach (var peer_id in mechanized_input_received)
+            foreach (var peer_id in mechanized_input_received.Keys)
             {
                 var peer_input = mechanized_input_received.Get<GDC.Dictionary>(peer_id);
-                foreach (var tick in peer_input)
+                foreach (var tick in peer_input.Keys)
                 {
                     var input = peer_input.Get<GDC.Dictionary>(tick);
                     var input_frame = _GetOrCreateInputFrame((int)(tick));

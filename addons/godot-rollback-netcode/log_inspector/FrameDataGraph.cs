@@ -14,8 +14,8 @@ namespace Fractural.RollbackNetcode
         [OnReadyGet("ScrollBar")]
         public HScrollBar scroll_bar;
 
-        private int _cursor_time = -1;
-        public int cursor_time
+        private long _cursor_time = -1;
+        public long cursor_time
         {
             get => _cursor_time;
             set
@@ -31,7 +31,7 @@ namespace Fractural.RollbackNetcode
 
         public LogData log_data;
 
-        public delegate void CursorTimeChangedDelegate(int cursor_time);
+        public delegate void CursorTimeChangedDelegate(long cursor_time);
         public event CursorTimeChangedDelegate CursorTimeChanged;
 
         [OnReady]

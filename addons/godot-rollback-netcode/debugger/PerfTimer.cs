@@ -41,7 +41,7 @@ namespace Fractural.RollbackNetcode
         {
             System.Diagnostics.Debug.Assert(start_timings.Count == 0, $"there are unstopped timers: {string.Join(", ", start_timings.Keys)}");
             var total = GetTotal();
-            foreach (var key in timings)
+            foreach (var key in timings.Keys)
                 GD.Print($"{key}: {(float)(timings[key]) / 1000.0} ms");
             GD.Print($" * total: {(float)(total) / 1000.0}");
         }

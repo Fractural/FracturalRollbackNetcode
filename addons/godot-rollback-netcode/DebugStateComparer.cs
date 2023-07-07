@@ -54,7 +54,7 @@ namespace Fractural.RollbackNetcode
             state.Remove("$");
 
             // Remove any keys that are ignored in the hash.
-            foreach (var node_path in state)
+            foreach (var node_path in state.Keys)
             {
                 // I think this happens when there's an error reading a GDC.Dictionary.
                 if (node_path == null)
@@ -76,7 +76,7 @@ namespace Fractural.RollbackNetcode
                 path = new GDC.Array() { };
             bool missing_or_extra = false;
 
-            foreach (string key in local_state)
+            foreach (string key in local_state.Keys)
             {
                 if (!remote_state.Contains(key))
                 {
@@ -90,7 +90,7 @@ namespace Fractural.RollbackNetcode
 
                 }
             }
-            foreach (string key in remote_state)
+            foreach (string key in remote_state.Keys)
             {
                 if (!local_state.Contains(key))
                 {
@@ -115,7 +115,7 @@ namespace Fractural.RollbackNetcode
                     ));
                 }
             }
-            foreach (string key in local_state)
+            foreach (string key in local_state.Keys)
             {
                 var local_value = local_state[key];
 

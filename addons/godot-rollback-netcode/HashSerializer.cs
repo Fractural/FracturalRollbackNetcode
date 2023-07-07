@@ -124,7 +124,7 @@ namespace Fractural.RollbackNetcode
         public GDC.Dictionary UnserializeDictionary(GDC.Dictionary value)
         {
             GDC.Dictionary unserialized = new GDC.Dictionary() { };
-            foreach (var key in value)
+            foreach (var key in value.Keys)
                 unserialized[key] = Unserialize(value[key]);
             return unserialized;
         }

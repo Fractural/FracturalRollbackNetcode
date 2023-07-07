@@ -12,8 +12,8 @@ namespace Fractural.RollbackNetcode
     public class FrameDataGrid : Tree
     {
         public LogData log_data;
-        private int _cursor_time = -1;
-        public int cursor_time
+        private long _cursor_time = -1;
+        public long cursor_time
         {
             get => _cursor_time;
             set
@@ -95,12 +95,11 @@ namespace Fractural.RollbackNetcode
             GDC.Dictionary frames = new GDC.Dictionary() { };
             GDC.Array prop_names = new GDC.Array() { };
             GDC.Array extra_prop_names = new GDC.Array() { };
-            int index = 0;
 
-            int columns = log_data.peer_ids.Count + 1;
+            Columns = log_data.peer_ids.Count + 1;
             ColumnTitlesVisible = true;
 
-            index = 1;
+            int index = 1;
             foreach (int peer_id in log_data.peer_ids)
             {
                 SetColumnTitle(index, $"Peer {peer_id}");
@@ -110,7 +109,7 @@ namespace Fractural.RollbackNetcode
                 frames[peer_id] = frame;
                 if (frame != null)
                 {
-                    foreach (var prop_name in frame.data)
+                    foreach (string prop_name in frame.data.Keys)
                     {
                         if (!_property_definitions.Contains(prop_name))
                         {

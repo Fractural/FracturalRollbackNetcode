@@ -146,7 +146,7 @@ namespace Fractural.RollbackNetcode
         public GDC.Dictionary _ConvertArrayToDictionary(GDC.Array a)
         {
             GDC.Dictionary d = new GDC.Dictionary() { };
-            foreach (var i in GD.Range(a.Count))
+            for (int i = 0; i < a.Count; i++)
                 d[i] = a[i];
             return d;
         }

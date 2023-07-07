@@ -26,14 +26,14 @@ namespace Fractural.RollbackNetcode
         {
             return new GDC.Dictionary()
             {
-                ["state"] = generator.State.Serialize(),
+                ["state"] = generator.State.SerializePrimitive(),
             };
 
         }
 
         public void _LoadState(GDC.Dictionary state)
         {
-            generator.State = state.Get<byte[]>("state").DeserializePrimitive<ulong>();
+            generator.State = state.GetSerializedPrimitive<ulong>("state");
         }
 
         public void Randomize()

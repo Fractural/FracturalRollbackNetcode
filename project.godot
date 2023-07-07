@@ -112,7 +112,7 @@ Main/GenerateVersionPreprocessorDefines=false
 [application]
 
 config/name="FracturalRollbackNetcode"
-run/main_scene="res://demo/mono/MonoMain.tscn"
+run/main_scene="res://demo/editor/LogInspectorTest.tscn"
 
 [autoload]
 
@@ -127,6 +127,11 @@ multirun/window_distance=1270
 multirun/add_custom_args=true
 multirun/first_window_args="listen"
 multirun/other_window_args="join"
+
+[display]
+
+window/size/width=1920
+window/size/height=1080
 
 [editor_plugins]
 

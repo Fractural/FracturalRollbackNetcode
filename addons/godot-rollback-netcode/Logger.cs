@@ -183,7 +183,7 @@ namespace Fractural.RollbackNetcode
             if (!data.Contains("frame_type"))
                 data["frame_type"] = FrameType.INTERFRAME;
             if (!data.Contains("start_time"))
-                data["start_time"] = OS.GetSystemTimeMsecs();
+                data.SetSerializedPrimitive("start_time", (long)OS.GetSystemTimeMsecs());
         }
 
         public void EndInterframe()
@@ -191,8 +191,8 @@ namespace Fractural.RollbackNetcode
             if (!data.Contains("frame_type"))
                 data["frame_type"] = FrameType.INTERFRAME;
             if (!data.Contains("start_time"))
-                data["start_time"] = OS.GetSystemTimeMsecs() - 1;
-            data["end_time"] = OS.GetSystemTimeMsecs();
+                data.SetSerializedPrimitive("start_time", (long)(OS.GetSystemTimeMsecs() - 1));
+            data.SetSerializedPrimitive("end_time", (long)OS.GetSystemTimeMsecs());
             WriteCurrentData();
         }
 
@@ -202,13 +202,13 @@ namespace Fractural.RollbackNetcode
                 EndInterframe();
             data["frame_type"] = FrameType.TICK;
             data["tick"] = tick;
-            data["start_time"] = OS.GetSystemTimeMsecs();
+            data.SetSerializedPrimitive("start_time", (long)OS.GetSystemTimeMsecs());
         }
 
         public void EndTick(uint start_ticks_usecs)
         {
-            data["end_time"] = OS.GetSystemTimeMsecs();
-            data["duration"] = (float)((uint)Time.GetTicksUsec() - start_ticks_usecs) / 1000f;
+            data.SetSerializedPrimitive("end_time", (long)OS.GetSystemTimeMsecs());
+            data["duration"] = ((uint)Time.GetTicksUsec() - start_ticks_usecs) / 1000f;
             WriteCurrentData();
         }
 
@@ -225,12 +225,12 @@ namespace Fractural.RollbackNetcode
                 EndInterframe();
             data["frame_type"] = FrameType.INTERPOLATION_FRAME;
             data["tick"] = tick;
-            data["start_time"] = (uint)OS.GetSystemTimeMsecs();
+            data.SetSerializedPrimitive("start_time", (long)OS.GetSystemTimeMsecs());
         }
 
         public void EndInterpolationFrame(uint start_ticks_usecs)
         {
-            data["end_time"] = (uint)OS.GetSystemTimeMsecs();
+            data.SetSerializedPrimitive("end_time", (long)OS.GetSystemTimeMsecs());
             data["duration"] = (float)((uint)Time.GetTicksUsec() - start_ticks_usecs) / 1000.0f;
             WriteCurrentData();
         }
@@ -238,7 +238,7 @@ namespace Fractural.RollbackNetcode
         public void LogFatalError(string msg)
         {
             if (!data.Contains("end_time"))
-                data["end_time"] = (uint)OS.GetSystemTimeMsecs();
+                data.SetSerializedPrimitive("end_time", (long)OS.GetSystemTimeMsecs());
             data["fatal_error"] = true;
             data["fatal_error_message"] = msg;
             WriteCurrentData();

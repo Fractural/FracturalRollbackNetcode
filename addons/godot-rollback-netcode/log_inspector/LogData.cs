@@ -91,8 +91,8 @@ namespace Fractural.RollbackNetcode
             public int frame;
             public Logger.FrameType type;
             public GDC.Dictionary data;
-            public int start_time;
-            public int end_time;
+            public long start_time;
+            public long end_time;
 
             public FrameData() { }
             public FrameData(int _frame, Logger.FrameType _type, GDC.Dictionary _data)
@@ -102,7 +102,7 @@ namespace Fractural.RollbackNetcode
                 data = _data;
             }
 
-            public FrameData CloneWithOffset(int offset)
+            public FrameData CloneWithOffset(long offset)
             {
                 var clone = new FrameData(frame, type, data);
                 clone.start_time = start_time + offset;
@@ -119,8 +119,8 @@ namespace Fractural.RollbackNetcode
         public int max_frame = 0;
         // [peer_id: int]: frame: int
         public GDC.Dictionary frame_counter = new GDC.Dictionary() { };
-        public int start_time;
-        public int end_time;
+        public long start_time;
+        public long end_time;
 
         // User-set data
         public GDC.Dictionary match_info = new GDC.Dictionary() { };
@@ -209,7 +209,6 @@ namespace Fractural.RollbackNetcode
             bool value = _is_loading;
             _loader_mutex.Unlock();
             return value;
-
         }
 
         public void _ThreadPrint(string msg)
@@ -247,18 +246,18 @@ namespace Fractural.RollbackNetcode
                             file.Close();
                             // TODO: Check if CallDeferred is needed for invoking C# events within 
                             //       multithreaded code that uses Godot threads.
+                            _SetLoading(false);
                             DataUpdated?.Invoke();
                             LoadError?.Invoke($"Log file has data for peer_id {header["peer_id"]}, which is already loaded");
-                            _SetLoading(false);
                             return;
                         }
                         var header_match_info = header.Get("match_info", new GDC.Dictionary() { });
                         if (match_info.Count > 0 && GD.Hash(match_info) != GD.Hash(header_match_info))
                         {
                             file.Close();
+                            _SetLoading(false);
                             DataUpdated?.Invoke();
                             LoadError?.Invoke($"Log file for peer_id {header["peer_id"]} has match info that doesn't match already loaded data");
-                            _SetLoading(false);
                             return;
                         }
                         else
@@ -277,10 +276,10 @@ namespace Fractural.RollbackNetcode
                     else
                     {
                         file.Close();
-                        DataUpdated?.Invoke();
-                        LoadError?.Invoke($"No header at the top of log: {path}");
 
                         _SetLoading(false);
+                        DataUpdated?.Invoke();
+                        LoadError?.Invoke($"No header at the top of log: {path}");
                         return;
                     }
                 }
@@ -290,9 +289,9 @@ namespace Fractural.RollbackNetcode
             file.Close();
             _UpdateStartEndTimes();
 
+            _SetLoading(false);
             DataUpdated?.Invoke();
             LoadFinished?.Invoke();
-            _SetLoading(false);
 
             GD.Print("Log data finished loading");
         }
@@ -343,13 +342,13 @@ namespace Fractural.RollbackNetcode
 
                     if (log_entry.Contains("start_time"))
                     {
-                        frame_data.start_time = log_entry.Get<int>("start_time");
+                        frame_data.start_time = log_entry.GetSerializedPrimitive<long>("start_time");
                         var peer_start_time = peer_start_times.Get<int>(peer_id);
                         peer_start_times[peer_id] = peer_start_time > 0 ? Math.Min(peer_start_time, frame_data.start_time) : frame_data.start_time;
                     }
                     if (log_entry.Contains("end_time"))
                     {
-                        frame_data.end_time = log_entry.Get<int>("end_time");
+                        frame_data.end_time = log_entry.GetSerializedPrimitive<long>("end_time");
                     }
                     else
                     {
@@ -363,18 +362,18 @@ namespace Fractural.RollbackNetcode
         public void _UpdateStartEndTimes()
         {
             int peer_id = peer_ids.ElementAt<int>(0);
-            start_time = peer_start_times.Get<int>(peer_id) + peer_time_offsets.Get<int>(peer_id);
+            start_time = peer_start_times.Get<long>(peer_id) + peer_time_offsets.Get<long>(peer_id);
             for (int i = 1; i < peer_ids.Count; i++)
             {
                 peer_id = peer_ids.ElementAt<int>(i);
-                start_time = Math.Min(start_time, peer_start_times.Get<int>(peer_id) + peer_time_offsets.Get<int>(peer_id));
+                start_time = Math.Min(start_time, peer_start_times.Get<long>(peer_id) + peer_time_offsets.Get<long>(peer_id));
             }
             peer_id = peer_ids.ElementAt<int>(0);
-            end_time = peer_end_times.Get<int>(peer_id) + peer_time_offsets.Get<int>(peer_id);
+            end_time = peer_end_times.Get<long>(peer_id) + peer_time_offsets.Get<long>(peer_id);
             for (int i = 1; i < peer_ids.Count; i++)
             {
                 peer_id = peer_ids.ElementAt<int>(i);
-                end_time = Math.Max(end_time, peer_end_times.Get<int>(peer_id) + peer_time_offsets.Get<int>(peer_id));
+                end_time = Math.Max(end_time, peer_end_times.Get<long>(peer_id) + peer_time_offsets.Get<long>(peer_id));
             }
         }
 
@@ -397,7 +396,7 @@ namespace Fractural.RollbackNetcode
             return frames.Get<GDC.Array>(peer_id).Count;
         }
 
-        public FrameData GetFrame(int peer_id, int frame_number)
+        public FrameData GetFrame(int peer_id, long frame_number)
         {
             if (IsLoading())
             {
@@ -408,9 +407,9 @@ namespace Fractural.RollbackNetcode
                 return null;
             if (frame_number >= frames.Get<GDC.Array>(peer_id).Count)
                 return null;
-            var frame = frames.Get<GDC.Array>(peer_id).ElementAt<FrameData>(frame_number);
+            var frame = frames.Get<GDC.Array>(peer_id).ElementAt<FrameData>((int)frame_number);
             if (peer_time_offsets.Get<int>(peer_id) != 0)
-                return frame.CloneWithOffset(peer_time_offsets.Get<int>(peer_id));
+                return frame.CloneWithOffset(peer_time_offsets.Get<long>(peer_id));
             return frame;
         }
 
@@ -427,7 +426,7 @@ namespace Fractural.RollbackNetcode
             return default_value;
         }
 
-        public FrameData GetFrameByTime(int peer_id, int time)
+        public FrameData GetFrameByTime(int peer_id, long time)
         {
             if (IsLoading())
             {
@@ -439,7 +438,7 @@ namespace Fractural.RollbackNetcode
                 return null;
             }
             GDC.Array peer_frames = frames.Get<GDC.Array>(peer_id);
-            int peer_time_offset = peer_time_offsets.Get<int>(peer_id);
+            long peer_time_offset = peer_time_offsets.Get<long>(peer_id);
             FrameData last_matching_frame = null;
             for (int i = 0; i < peer_frames.Count; i++)
             {
