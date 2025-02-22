@@ -1,3 +1,9 @@
+> [!Warning]
+>
+> This repository is now deprecated.
+> 
+> Please use [Godot Rollback Netcode Mono](https://github.com/Fractural/GodotRollbackNetcodeMono), a C# wrapper for SnopekGame's [Godot Rollback Netcode](https://gitlab.com/snopek-games/godot-rollback-netcode) addon instead!
+
 # Fractural Rollback Netcode 🔃
 
 This is a C# implementation of rollback netcode in Godot. This is based off of [SnopekGames' Godot Rollback Netcode addon](https://gitlab.com/snopek-games/godot-rollback-netcode).
